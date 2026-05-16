@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useTimer } from "@/context/TimerContext";
 import { FaUsers } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import { IoIosPause } from "react-icons/io";
+import { usePathname, useRouter } from "next/navigation";
 import API from "@/api";
 import {
   Clock3,
@@ -16,15 +17,17 @@ import {
 } from "lucide-react";
 
 const DashNavbar = ({ user, setTrackedSeconds }) => {
-
   const [appOpen, setAppOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const appRef = useRef(null);
   const profileRef = useRef(null);
 
-
   const router = useRouter();
+  const pathname = usePathname();
 
+  const currentApp = pathname.startsWith("/dashboard/user-management")
+    ? "User Management"
+    : "Time Tracking";
 
   const handleLogout = async () => {
     try {
@@ -52,15 +55,15 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
 
   const avatarLetter = user?.email?.charAt(0).toUpperCase() || "U";
 
-  const { isTracking, start, stop } = useTimer();
+  const { isTracking, isPaused, start, stop, pause, resume } = useTimer();
 
-const handleTracking = () => {
-  if (isTracking) {
-    stop();
-  } else {
-    start();
-  }
-};
+  const handleTracking = () => {
+    if (isTracking || isPaused) {
+      stop();
+    } else {
+      start();
+    }
+  };
 
   return (
     <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
@@ -71,17 +74,17 @@ const handleTracking = () => {
           <div className="relative" ref={appRef}>
             <div className="flex items-center">
               <button
-                onClick={() => setAppOpen(true)}
+                onClick={() => setAppOpen(!appOpen)}
                 className="flex items-center px-3 py-2 rounded bg-indigo-50 hover:bg-indigo-100 text-gray-800 border-r border-indigo-200 shadow-sm"
               >
                 <Clock3 className="w-5 h-5 mr-2 text-indigo-600" />
                 <span className="text-sm font-semibold text-indigo-900 hidden sm:inline">
-                  Time Tracking
+                  {currentApp}
                 </span>
               </button>
 
               <button
-                onClick={(e) => setAppOpen(!appOpen)}
+                onClick={() => setAppOpen(!appOpen)}
                 className="p-2 rounded-r bg-indigo-50 hover:bg-indigo-100 text-gray-600"
               >
                 <ChevronDown className="w-5 h-5" />
@@ -94,7 +97,13 @@ const handleTracking = () => {
                 <p className="text-sm text-gray-400 mb-2">Apps</p>
 
                 <div className="bg-gray-800 rounded-lg p-2 space-y-2">
-                  <div className="flex items-center justify-between p-2 hover:bg-gray-700 rounded cursor-pointer">
+                  <div
+                    onClick={() => {
+                      router.push("/dashboard/time-tracking/overview");
+                      setAppOpen(false);
+                    }}
+                    className="flex items-center justify-between p-2 hover:bg-gray-700 rounded cursor-pointer"
+                  >
                     <span>Time Tracking</span>
                     <span className="text-green-400">
                       <Check className="w-4 h-4 text-green-400 ml-auto" />
@@ -109,7 +118,13 @@ const handleTracking = () => {
                 <p className="text-sm text-gray-400 mt-4 mb-2">Configuration</p>
 
                 <div className="space-y-2">
-                  <div className="p-2 hover:bg-gray-700 rounded cursor-pointer">
+                  <div
+                    onClick={() => {
+                      router.push("/dashboard/user-management");
+                      setAppOpen(false);
+                    }}
+                    className="p-2 hover:bg-gray-700 rounded cursor-pointer"
+                  >
                     User Management
                   </div>
 
@@ -140,17 +155,36 @@ const handleTracking = () => {
           <button
             onClick={handleTracking}
             className={`flex items-center px-3 py-2 rounded text-sm font-semibold ${
-              isTracking
+              isTracking || isPaused
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-indigo-600 hover:bg-indigo-700"
             } text-white`}
           >
             <Play className="w-4 h-4" />
-
             <span className="ml-2 hidden sm:inline">
-              {isTracking ? "Stop tracking" : "Start tracking"}
+              {isTracking || isPaused ? "Stop tracking" : "Start tracking"}
             </span>
           </button>
+
+          {/* PAUSE / RESUME */}
+          {(isTracking || isPaused) && (
+            <button
+              onClick={isTracking ? pause : resume}
+              className="flex items-center px-3 py-2 rounded text-sm font-semibold bg-yellow-500 hover:bg-yellow-600 text-white"
+            >
+              {isTracking ? (
+                <>
+                  <IoIosPause className="w-4 h-4" />
+                  <span className="ml-2 hidden sm:inline">Pause</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  <span className="ml-2 hidden sm:inline">Resume</span>
+                </>
+              )}
+            </button>
+          )}
 
           <MailOpen className="w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer" />
 

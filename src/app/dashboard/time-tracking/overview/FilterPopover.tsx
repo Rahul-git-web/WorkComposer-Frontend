@@ -4,22 +4,29 @@ import { useState } from "react";
 import { X, Search, Check } from "lucide-react";
 import { MdKeyboardArrowDown } from "react-icons/md";
 
+type Props = {
+  selectedTeams: string[];
+  setSelectedTeams: React.Dispatch<React.SetStateAction<string[]>>;
+  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
 export default function FilterPopover({
   selectedTeams,
   setSelectedTeams,
   setOpen,
-}) {
-  const [teamOpen, setTeamOpen] = useState(false);
+}: Props) {
+  const [teamOpen, setTeamOpen] = useState<boolean>(false);
 
-  const teams = ["Default team"];
+  const teams: string[] = ["Default team"];
+  // const teams: string[] = teamsFromBackend;
 
-  const toggleTeam = (team) => {
-    if (selectedTeams.includes(team)) {
-      setSelectedTeams(selectedTeams.filter((t) => t !== team));
-    } else {
-      setSelectedTeams([...selectedTeams, team]);
-    }
-  };
+  const toggleTeam = (team: string) => {
+  setSelectedTeams((prev) =>
+    prev.includes(team)
+      ? prev.filter((t) => t !== team)
+      : [...prev, team]
+  );
+};
 
   return (
     <div className="absolute top-full left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-20 w-[400px]">
@@ -29,6 +36,8 @@ export default function FilterPopover({
         <button
           onClick={() => setOpen(false)}
           className="p-1 hover:bg-gray-100 rounded"
+          title="Close filter options"
+          aria-label="Close filter options"
         >
           <X className="h-4 w-4 text-gray-500" />
         </button>
@@ -61,11 +70,10 @@ export default function FilterPopover({
                 e.stopPropagation();
                 setSelectedTeams([]);
               }}
-              className={`px-3 py-2 text-sm cursor-pointer ${
-                selectedTeams.length === 0
-                  ? "bg-blue-50 text-blue-600 font-medium"
-                  : "hover:bg-gray-100"
-              }`}
+              className={`px-3 py-2 text-sm cursor-pointer ${selectedTeams.length === 0
+                ? "bg-blue-50 text-blue-600 font-medium"
+                : "hover:bg-gray-100"
+                }`}
             >
               All Teams
             </div>
@@ -76,7 +84,12 @@ export default function FilterPopover({
                 className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-md text-xs"
               >
                 {team}
-                <button onClick={() => toggleTeam(team)}>
+                <button
+                  type="button"
+                  onClick={() => toggleTeam(team)}
+                  aria-label={`Remove ${team}`}
+                  title={`Remove ${team}`}
+                >
                   <X className="w-3 h-3" />
                 </button>
               </div>
@@ -88,7 +101,11 @@ export default function FilterPopover({
           <button
             onClick={() => setSelectedTeams([])}
             className="text-sm text-gray-500 hover:text-gray-700"
-          ></button>
+            title="Clear all selected teams"
+            aria-label="Clear all selected teams"
+          >
+            Clear all
+          </button>
         )}
 
         <div className="relative" onClick={(e) => e.stopPropagation()}>
@@ -108,7 +125,6 @@ export default function FilterPopover({
           {/* Dropdown */}
           {teamOpen && (
             <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-md z-30">
-              {/* Default team */}
               {teams.map((team) => (
                 <div
                   key={team}
@@ -137,7 +153,7 @@ export default function FilterPopover({
             Sort By
           </label>
           <div className="relative">
-            <select className="w-full appearance-none pl-3 pr-9 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer bg-white">
+            <select aria-label="Sort By" className="w-full appearance-none pl-3 pr-9 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer bg-white">
               <option value="name">Name</option>
               <option value="team">Team</option>
               <option value="externalId">External ID</option>
@@ -152,7 +168,7 @@ export default function FilterPopover({
             Order
           </label>
           <div className="relative">
-            <select className="w-full appearance-none pl-3 pr-9 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer bg-white">
+            <select aria-label="Order" className="w-full appearance-none pl-3 pr-9 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer bg-white">
               <option value="asc">Ascending</option>
               <option value="desc">Descending</option>
             </select>

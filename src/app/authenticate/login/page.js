@@ -32,7 +32,7 @@ const SignInPage = () => {
     try {
       const res = await API.post("/auth/login", formData);
 
-      router.push("/dashboard/overview");
+      router.push("/dashboard/time-tracking/overview");
     } catch (err) {
       console.log(err.response?.data?.message);
     }

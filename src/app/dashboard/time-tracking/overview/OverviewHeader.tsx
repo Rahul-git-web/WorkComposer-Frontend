@@ -7,35 +7,45 @@ import { HiOfficeBuilding } from "react-icons/hi";
 import FilterPopover from "./FilterPopover";
 import DateControls from "./DateControls";
 
-export default function OverviewHeader({ date, setDate }) {
-  // const [date, setDate] = useState(new Date());
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedTeams, setSelectedTeams] = useState([]);
-  const [open, setOpen] = useState(false);
-  const ref = useRef();
-
-  useEffect(() => {
-  const interval = setInterval(() => {
-    setCurrentTime(new Date());
-  }, 1000);
-
-  return () => clearInterval(interval);
-}, []);
-
-const formatDateTime = (date) => {
-  return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+type Props = {
+  date: Date;
+  setDate: React.Dispatch<React.SetStateAction<Date>>;
+  selectedTeams: string[];
+  setSelectedTeams: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
+export default function OverviewHeader({
+  date,
+  setDate,
+  selectedTeams,
+  setSelectedTeams,
+}: Props) {
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [open, setOpen] = useState<boolean>(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatDateTime = (date: Date): string => {
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -47,11 +57,13 @@ const formatDateTime = (date) => {
   return (
     <div className="w-full">
       {/* Top Info */}
-      <div className="mb-1 flex justify-end">
+      <div className="mb-1 flex justify-end mt-7">
         <div className="text-xs text-gray-500">
-         <span>Report generated: {formatDateTime(currentTime)}</span>
+          <span>Report generated: {formatDateTime(currentTime)}</span>
           <span className="ml-2">•</span>
-          <span className="ml-2">Timezone: Asia/Calcutta (UTC+05:30)</span>
+          <span className="ml-2">
+            Timezone: Asia/Calcutta (UTC+05:30)
+          </span>
         </div>
       </div>
 
@@ -74,7 +86,6 @@ const formatDateTime = (date) => {
                 <HiUsers className="w-4 h-4 text-gray-600" />
               )}
 
-              {/* TEXT UI (NOT CHIPS) */}
               <div className="flex items-center gap-2 max-w-[250px]">
                 {selectedTeams.length > 0 ? (
                   <>
@@ -89,14 +100,16 @@ const formatDateTime = (date) => {
                     </span>
                   </>
                 ) : (
-                  <span className="text-gray-900">All Users & Teams</span>
+                  <span className="text-gray-900">
+                    All Users & Teams
+                  </span>
                 )}
               </div>
 
               <MdKeyboardArrowDown className="w-4 h-4 text-gray-400 ml-1" />
             </button>
 
-            {/* Clear Button (outside main button) */}
+            {/* Clear Button */}
             {selectedTeams.length > 0 && (
               <button
                 onClick={() => setSelectedTeams([])}
@@ -123,7 +136,7 @@ const formatDateTime = (date) => {
         </div>
 
         {/* Right Section */}
-       <DateControls date={date} setDate={setDate} />
+        <DateControls date={date} setDate={setDate} />
       </div>
     </div>
   );
