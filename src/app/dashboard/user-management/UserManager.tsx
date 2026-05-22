@@ -97,13 +97,16 @@ const UserManager = ({
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      const isManager = user.role?.toLowerCase() === "manager" ||
-        user.role?.toLowerCase() === "owner";
+      // const isManager = user.role?.toLowerCase() === "manager" ||
+      //   user.role?.toLowerCase() === "owner";
 
-      if (isManager)
-        return false;
+      // if (isManager)
+      //   return false;
 
-      if (user._id === userId)
+      const currentUserId = user._id ||
+        (user as any).id;
+
+      if (currentUserId === userId)
         return false;
 
       const fullName =
@@ -136,7 +139,7 @@ const UserManager = ({
   }
 
   const handleSelectAllUsers = () => {
-    const allIds = filteredUsers.map((u) => u._id);
+    const allIds = filteredUsers.map((u) => u._id || (u as any).id);
 
     const allSelected = allIds.every((id) =>
       selectedUsers.includes(id)
@@ -358,7 +361,7 @@ const UserManager = ({
                   <div className="flex items-center justify-between text-sm">
                     <p className="text-gray-600">{
                       filteredUsers.filter((user) =>
-                        selectedUsers.includes(user._id)
+                        selectedUsers.includes(user._id || (user as any).id)
                       ).length
                     } selected
                     </p>
@@ -387,7 +390,7 @@ const UserManager = ({
                                 checked={
                                   filteredUsers.length > 0 &&
                                   filteredUsers.every((user) =>
-                                    selectedUsers.includes(user._id)
+                                    selectedUsers.includes(user._id || (user as any).id)
                                   )
                                 }
                                 onChange={handleSelectAllUsers}
@@ -416,9 +419,9 @@ const UserManager = ({
                               <div className="flex items-center gap-4">
                                 <input
                                   type="checkbox"
-                                  checked={selectedUsers.includes(user._id)}
+                                  checked={selectedUsers.includes(user._id || (user as any).id)}
                                   onChange={() =>
-                                    handleUserSelect(user._id)
+                                    handleUserSelect(user._id || (user as any).id)
                                   }
                                   className="h-3.5 w-3.5 rounded border-gray-300"
                                 ></input>

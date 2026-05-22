@@ -3,24 +3,66 @@
 import { useState, useEffect } from 'react';
 import API from "@/api";
 import { AxiosError } from 'axios';
-import { X, Check, Plus } from 'lucide-react';
+import { X, Check, Plus, Eye, EyeOff } from 'lucide-react';
 import { TbSelector } from "react-icons/tb";
 import { HiMiniDocumentDuplicate } from "react-icons/hi2";
 import BulkInvites from './BulkInvites';
+import { HiMiniMinusCircle } from "react-icons/hi2";
 
 const AddUsers = ({ setShowAddModal, setUsers }: any) => {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    role: "User",
-    team: "Default team",
-    sendInvite: true,
-  });
+  const [usersData, setUsersData] = useState([
+    {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      role: "User",
+      team: "Default team",
+    }
+  ]);
+
+  const [sendInvite, setSendInvite] = useState(true);
   const [teamOpen, setTeamOpen] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
   const [showBulkInvite, setShowBulkInvite] = useState(false);
   const [teams, setTeams] = useState<any[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
 
+  const addUserRow = () => {
+    setUsersData((prev) => [
+      ...prev,
+      {
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        role: "User",
+        team: "Default team",
+      },
+    ]);
+  };
+
+  const removeUserRow = (index: number) => {
+    setUsersData((prev) =>
+      prev.filter((_, i) => i !== index)
+    );
+  };
+
+  const updateUserField = (
+    index: number,
+    field: string,
+    value: string
+  ) => {
+    const updated = [...usersData];
+
+    updated[index] = {
+      ...updated[index],
+      [field]: value,
+    };
+
+    setUsersData(updated);
+  }
 
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,34 +71,62 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
     try {
       setLoading(true);
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      for (const user of usersData) {
 
-      if (!emailRegex.test(formData.email)) {
-        alert("Please enter valid email");
-        return;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!emailRegex.test(user.email)) {
+          alert("Please enter valid email");
+          return;
+        }
+
+        if (!sendInvite && !user.password) {
+          alert("Password is required");
+          return;
+        }
+
+        if (sendInvite) {
+
+          await API.post("/users/invite", {
+            email: user.email.trim(),
+            role: user.role.toLowerCase(),
+            team: user.team,
+          });
+
+        } else {
+
+          await API.post("/users/create-user", {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email.trim(),
+            password: user.password,
+            role: user.role.toLowerCase(),
+            team: user.team,
+          });
+
+        }
       }
-
-      await API.post("/users/invite", {
-        email: formData.email.trim(),
-        role: formData.role.toLowerCase(),
-        team: formData.team,
-      });
 
       const updatedUsers = await API.get("/users/all-users");
 
       setUsers(updatedUsers.data);
 
       alert("Invite sent successfully");
+
       setTimeout(() => {
         setShowAddModal(false);
       }, 500);
 
-      setFormData({
-        email: "",
-        role: "User",
-        team: "Default team",
-        sendInvite: true,
-      });
+      setUsersData([
+        {
+          firstName: "",
+          lastName: "",
+          email: "",
+          password: "",
+          role: "User",
+          team: "Default team",
+        },
+      ]);
 
 
     } catch (err: unknown) {
@@ -127,139 +197,252 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
               <div className='border-t border-gray-200 my-5'></div>
               <form onSubmit={handleInviteUser}
                 className='space-y-4'>
-                <div className='p-4 rounded-lg bg-gray-50 border border-gray-100 mb-4 transition-all duration-200 hover:shadow-md'>
 
-                  <div className='grid grid-cols-1 md:grid-cols-6 gap-4'>
 
-                    <div className='md:col-span-2'>
-                      <label htmlFor='email' className='block text-sm font-medium text-gray-700 mb-1'>Email</label>
-                      <input id='email' required type='email'
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            email: e.target.value,
-                          })
-                        }
-                        className='block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm' placeholder='Email'>
-                      </input>
-                    </div>
+                {usersData.map((user, index) => (
+                  <div
+                    key={index}
+                    className='p-4 rounded-lg bg-gray-50 border border-gray-100 mb-4'
+                  >
 
-                    <div className='md:col-span-2 relative dropdown'>
-                      <label className='block text-sm font-medium text-gray-700 mb-1'>Team</label>
-                      <button onClick={() => {
-                        setTeamOpen(!teamOpen);
-                        setRoleOpen(false);
-                      }}
-                        type='button' aria-haspopup='listbox' aria-expanded={teamOpen} className='relative w-full cursor-default rounded-md border-0 py-2 px-3 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm'>
-                        <span className='block truncate'>{formData.team}</span>
-                        <span className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2'>
-                          <TbSelector className='h-4 w-4 text-gray-400' />
-                        </span>
-                      </button>
+                    <div className='flex justify-end items-center mb-2'>
+                      {usersData.length > 1 && (
+                        <button
+                          type='button'
+                          onClick={() => removeUserRow(index)}
+                          className='flex items-center gap-1 text-red-500 text-sm font-medium mt-2 hover:text-red-600'
 
-                      {teamOpen && (
-                        <ul
-                          aria-orientation='vertical'
-                          role='listbox'
-                          className='absolute z-10 mt-1 w-full rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 sm:text-sm'
                         >
-                          {["Default team", ...teams.map((t) => t.name)].map((team) => (
-                            <li
-                              key={team}
-                              onClick={() => {
-                                setFormData({
-                                  ...formData,
-                                  team,
-                                });
-
-                                setTeamOpen(false);
-                              }}
-                              className={`relative cursor-pointer select-none py-2 pl-3 pr-9 ${formData.team === team
-                                ? "bg-indigo-600 text-white"
-                                : "text-gray-900 hover:bg-gray-100"
-                                }`}
-                            >
-                              <span
-                                className={`block truncate ${formData.team === team
-                                  ? "font-medium"
-                                  : "font-normal"
-                                  }`}
-                              >
-                                {team}
-                              </span>
-
-                              {formData.team === team && (
-                                <span className='absolute inset-y-0 right-0 flex items-center pr-4'>
-                                  <Check className='h-5 w-5' />
-                                </span>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
+                          <HiMiniMinusCircle className='w-5 h-5 mt-0.5' />
+                          Remove
+                        </button>
                       )}
                     </div>
-                  </div>
 
-                  <div className='md:col-span-2'>
-                    <label className='block text-sm font-medium text-gray-700 mb-1'>Role</label>
-                    <div className='relative w-full dropdown'>
-                      <button onClick={() => {
-                        setRoleOpen(!roleOpen);
-                        setTeamOpen(false);
-                      }}
-                        type='button' aria-haspopup='listbox' aria-expanded={roleOpen} className='relative w-full cursor-default rounded-md border-0 py-2 px-3 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm'>
-                        <span className='block truncate'>{formData.role}</span>
-                        <span className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2'>
-                          <TbSelector className='h-4 w-4 text-gray-400' />
-                        </span>
-                      </button>
 
-                      {roleOpen && (
-                        <ul
-                          aria-orientation='vertical'
-                          role='listbox'
-                          className='absolute z-10 mt-1 w-full rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 sm:text-sm'
-                        >
+                    <div
+                      className={`grid gap-4 items-end ${sendInvite
+                        ? "grid-cols-1 md:grid-cols-3"
+                        : "grid-cols-1 md:grid-cols-6"
+                        }`}
+                    >
 
-                          {["User", "Manager", "Admin"].map((role) => (
-                            <li
-                              key={role}
-                              onClick={() => {
-                                setFormData({
-                                  ...formData,
-                                  role,
-                                });
+                      {/* INVITE USER MODE */}
 
-                                setRoleOpen(false);
-                              }}
-                              className={`relative cursor-pointer select-none py-2 pl-3 pr-9 ${formData.role === role
-                                ? "bg-indigo-600 text-white"
-                                : "text-gray-900 hover:bg-gray-100"
-                                }`}
-                            >
-                              <span
-                                className={`block truncate ${formData.role === role
-                                  ? "font-medium"
-                                  : "font-normal"
-                                  }`}
+                      {sendInvite ? (
+                        <>
+                          {/* EMAIL */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              Email
+                            </label>
+
+                            <input
+                              type='email'
+                              value={user.email}
+                              onChange={(e) =>
+                                updateUserField(index, "email", e.target.value)
+                              }
+                              placeholder='Email'
+                              className='block w-full h-10 rounded-md border-0 px-3 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
+                            />
+                          </div>
+
+                          {/* TEAM */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              Team
+                            </label>
+
+                            <div className='relative'>
+                              <select
+                                value={user.team}
+                                onChange={(e) =>
+                                  updateUserField(index, "team", e.target.value)
+                                }
+                                className='w-full h-10 appearance-none rounded-md border-0 px-3 pr-10 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
                               >
-                                {role}
-                              </span>
+                                {["Default team", ...teams.map((t) => t.name)].map((team) => (
+                                  <option key={team} value={team}>
+                                    {team}
+                                  </option>
+                                ))}
+                              </select>
 
-                              {formData.role === role && (
-                                <span className='absolute inset-y-0 right-0 flex items-center pr-4'>
-                                  <Check className='h-5 w-5' />
-                                </span>
-                              )}
-                            </li>
-                          ))}
+                              <TbSelector className='absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none' />
+                            </div>
+                          </div>
 
-                        </ul>
+                          {/* ROLE */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              Role
+                            </label>
+
+                            <div className='relative'>
+                              <select
+                                value={user.role}
+                                onChange={(e) =>
+                                  updateUserField(index, "role", e.target.value)
+                                }
+                                className='w-full h-10 appearance-none rounded-md border-0 px-3 pr-10 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
+                              >
+                                <option>User</option>
+                                <option>Manager</option>
+                                <option>Admin</option>
+                              </select>
+
+                              <TbSelector className='absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none' />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* FIRST NAME */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              First Name
+                            </label>
+
+                            <input
+                              type='text'
+                              value={user.firstName}
+                              onChange={(e) =>
+                                updateUserField(index, "firstName", e.target.value)
+                              }
+                              placeholder='First Name'
+                              className='block w-full h-10 rounded-md border-0 px-3 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
+                            />
+                          </div>
+
+                          {/* LAST NAME */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              Last Name
+                            </label>
+
+                            <input
+                              type='text'
+                              value={user.lastName}
+                              onChange={(e) =>
+                                updateUserField(index, "lastName", e.target.value)
+                              }
+                              placeholder='Last Name'
+                              className='block w-full h-10 rounded-md border-0 px-3 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
+                            />
+                          </div>
+
+                          {/* EMAIL */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              Email
+                            </label>
+
+                            <input
+                              type='email'
+                              value={user.email}
+                              onChange={(e) =>
+                                updateUserField(index, "email", e.target.value)
+                              }
+                              placeholder='Email'
+                              className='block w-full h-10 rounded-md border-0 px-3 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
+                            />
+                          </div>
+
+                          {/* PASSWORD */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              Password
+                            </label>
+
+                            <div className='relative'>
+                              <input
+                                type={showPassword ? "text" : "password"}
+                                value={user.password}
+                                onChange={(e) =>
+                                  updateUserField(index, "password", e.target.value)
+                                }
+                                placeholder='Password'
+                                className='block w-full h-10 rounded-md border-0 px-3 pr-10 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
+                              />
+
+                              <button
+                                type='button'
+                                onClick={() => setShowPassword(!showPassword)}
+                                className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600'
+                              >
+                                {showPassword ? (
+                                  <EyeOff className='h-4 w-4' />
+                                ) : (
+                                  <Eye className='h-4 w-4' />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* TEAM */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              Team
+                            </label>
+
+                            <div className='relative'>
+                              <select
+                                value={user.team}
+                                onChange={(e) =>
+                                  updateUserField(index, "team", e.target.value)
+                                }
+                                className='w-full h-10 appearance-none rounded-md border-0 px-3 pr-10 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
+                              >
+                                {["Default team", ...teams.map((t) => t.name)].map((team) => (
+                                  <option key={team} value={team}>
+                                    {team}
+                                  </option>
+                                ))}
+                              </select>
+
+                              <TbSelector className='absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none' />
+                            </div>
+                          </div>
+
+                          {/* ROLE */}
+
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>
+                              Role
+                            </label>
+
+                            <div className='relative'>
+                              <select
+                                value={user.role}
+                                onChange={(e) =>
+                                  updateUserField(index, "role", e.target.value)
+                                }
+                                className='w-full h-10 appearance-none rounded-md border-0 px-3 pr-10 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
+                              >
+                                <option>User</option>
+                                <option>Manager</option>
+                                <option>Admin</option>
+                              </select>
+
+                              <TbSelector className='absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none' />
+                            </div>
+                          </div>
+                        </>
                       )}
+
                     </div>
                   </div>
-                </div>
+                ))}
+
 
                 <div className='mt-6 p-4 bg-gray-50 rounded-lg border border-gray-100'>
                   <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
@@ -267,12 +450,9 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
                       <div className='relative flex items-start'>
                         <div className='flex h-6 items-center'>
                           <input id='send-invite-email' name='send-invite-email' type='checkbox'
-                            checked={formData.sendInvite}
+                            checked={sendInvite}
                             onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                sendInvite: e.target.checked,
-                              })
+                              setSendInvite(e.target.checked)
                             }
                             className='h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600' />
                         </div>
@@ -284,7 +464,10 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
                       </div>
                     </div>
 
-                    <button type='button' className='inline-flex items-center justify-center rounded-md bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'>
+                    <button
+                      type='button'
+                      onClick={addUserRow}
+                      className='inline-flex items-center justify-center rounded-md bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'>
                       <Plus className='h-5 w-5 mr-1' />
                       Add Another User
                     </button>
@@ -310,7 +493,7 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
                     <button
                       type='submit'
                       disabled={loading}
-                      className={`rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 transition-colors duration-200 ${loading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-500"}`}>{loading ? "Sending..." : "Send Invitations"}
+                      className={`rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 transition-colors duration-200 ${loading ? "bg-indigo-300 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-500"}`}>{loading ? sendInvite ? "Sending..." : "Creating..." : sendInvite ? "Send Invitations" : "Add Users"}
                     </button>
                   </div>
                 </div>

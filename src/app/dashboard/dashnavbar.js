@@ -11,10 +11,10 @@ import {
   ChevronDown,
   Settings,
   Play,
-  MailOpen,
-  BriefcaseBusiness,
   Check,
 } from "lucide-react";
+import { HiOutlineInboxStack } from "react-icons/hi2";
+import { HiOutlineEnvelopeOpen } from "react-icons/hi2";
 
 const DashNavbar = ({ user, setTrackedSeconds }) => {
   const [appOpen, setAppOpen] = useState(false);
@@ -27,7 +27,9 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
 
   const currentApp = pathname.startsWith("/dashboard/user-management")
     ? "User Management"
-    : "Time Tracking";
+    : pathname.startsWith("/dashboard/task-management")
+      ? "Task Management"
+      : "Time Tracking";
 
   const handleLogout = async () => {
     try {
@@ -105,13 +107,23 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
                     className="flex items-center justify-between p-2 hover:bg-gray-700 rounded cursor-pointer"
                   >
                     <span>Time Tracking</span>
-                    <span className="text-green-400">
-                      <Check className="w-4 h-4 text-green-400 ml-auto" />
-                    </span>
+                    {pathname.startsWith(
+                      "/dashboard/time-tracking/overview",
+                    ) && <Check className="w-4 h-4 text-gray-400 ml-auto" />}
                   </div>
 
-                  <div className="p-2 hover:bg-gray-700 rounded cursor-pointer">
-                    Task Management
+                  <div
+                    onClick={() => {
+                      router.push("/dashboard/task-management");
+                      setAppOpen(false);
+                    }}
+                    className="flex items-center justify-between p-2 hover:bg-gray-700 rounded cursor-pointer"
+                  >
+                    <span>Task Management</span>
+
+                    {pathname.startsWith("/dashboard/task-management") && (
+                      <Check className="w-4 h-4 text-green-400 ml-auto" />
+                    )}
                   </div>
                 </div>
 
@@ -123,9 +135,13 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
                       router.push("/dashboard/user-management");
                       setAppOpen(false);
                     }}
-                    className="p-2 hover:bg-gray-700 rounded cursor-pointer"
+                    className="flex items-center justify-between p-2 hover:bg-gray-700 rounded cursor-pointer"
                   >
-                    User Management
+                    <span>User Management</span>
+
+                    {pathname.startsWith("dashboard/user-management") && (
+                      <Check className="w-4 h-4 text-green-400 ml-auto" />
+                    )}
                   </div>
 
                   <div className="p-2 hover:bg-gray-700 rounded cursor-pointer">
@@ -186,9 +202,9 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
             </button>
           )}
 
-          <MailOpen className="w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer" />
+          <HiOutlineEnvelopeOpen className="w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer" />
 
-          <BriefcaseBusiness className="w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer" />
+          <HiOutlineInboxStack className="w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer" />
 
           {/* // User Profile */}
 

@@ -153,6 +153,8 @@ export default function TeamsManagement() {
                 prev.filter((user: any) =>
                     (user._id || user.id) !== id)
             );
+            setTotalUsers((prev: number) => prev - 1);
+            setTotalPages(Math.ceil((totalUsers - 1) / 5));
 
             setOpenDropDown(null);
 
@@ -160,6 +162,13 @@ export default function TeamsManagement() {
             console.log(err)
         }
     }
+
+    const startUser = totalUsers === 0 ? 0 : (currentPage - 1) * 5 + 1;
+    const endUser = Math.min(currentPage * 5, totalUsers);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedRole, selectedTeam]);
 
     const handleUpdateRole = async (
         id: string,
@@ -1024,20 +1033,11 @@ export default function TeamsManagement() {
 
                                     <p className='text-sm text-gray-600'>
                                         Showing{" "}
-                                        <span className='font-medium'>
-                                            {(currentPage - 1) * usersPerPage + 1}
-                                        </span>
+                                        <span className='font-medium'>{startUser}</span>
                                         {" "}to{" "}
-                                        <span className='font-medium'>
-                                            {Math.min(
-                                                currentPage * usersPerPage,
-                                                totalUsers
-                                            )}
-                                        </span>
+                                        <span className='font-medium'>{endUser}</span>
                                         {" "}of{" "}
-                                        <span className='font-medium'>
-                                            {totalUsers}
-                                        </span>
+                                        <span className='font-medium'>{totalUsers}</span>
                                         {" "}users
                                     </p>
 

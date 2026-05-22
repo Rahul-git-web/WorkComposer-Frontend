@@ -17,6 +17,7 @@ import {
   Plus,
   EllipsisVertical,
   Pencil,
+  FolderClosed,
 } from "lucide-react";
 import { BsBarChart } from "react-icons/bs";
 import { HiMiniUsers } from "react-icons/hi2";
@@ -25,6 +26,8 @@ import Image from "next/image";
 import CreateTeamModal from "./user-management/CreateTeamModal";
 import DeleteTeamModal from "./user-management/DeleteTeamModal";
 import EditTeamModal from "./user-management/EditTeamModal";
+import NewProject from "./task-management/NewProject";
+import DeleteProject from "./task-management/DeleteProject";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -36,19 +39,37 @@ const Sidebar = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
-
+  const [projects, setProjects] = useState<any[]>([
+    {
+      _id: "default-project",
+      name: "Default Project",
+    },
+  ]);
+  const [openProjectMenu, setOpenProjectMenu] = useState<string | null>(null);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+  const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<any>(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
   const searchParams = useSearchParams();
 
   const activeTeam = searchParams.get("team") || "All Teams";
+  const activeProject = searchParams.get("project") || "Default Project";
+
+  const [projectSearch, setProjectSearch] = useState("");
 
   console.log(selectedTeam);
 
   const router = useRouter();
 
-  const isUserManagement = pathname.startsWith("/dashboard/user-management");
   const isTimeTracking =
     pathname.startsWith("/dashboard/time-tracking") ||
     pathname === "/dashboard";
+  const isTaskManagement = pathname.startsWith("/dashboard/task-management");
+  const isUserManagement = pathname.startsWith("/dashboard/user-management");
+
+
+
   //  removed active state
   // const [active, setActive] = useState("overview");
 
@@ -74,6 +95,31 @@ const Sidebar = () => {
     }
   }, [isUserManagement]);
 
+   const fetchProjects = async () => {
+    try {
+
+      const res = await API.get("/projects");
+
+      setProjects([
+        {
+          _id: "default-project",
+          name: "Default Project",
+        },
+
+        ...res.data,
+      ]);
+
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  useEffect(() => {
+    if (isTaskManagement) {
+      fetchProjects();
+    }
+  }, [isTaskManagement]);
+
   useEffect(() => {
     const handleClickOutside = () => {
       setOpenTeamMenu(null);
@@ -97,6 +143,14 @@ const Sidebar = () => {
       console.log(err)
     }
   };
+
+  const filteredProjects = projects.filter((project) =>
+    project.name
+      .toLowerCase()
+      .includes(projectSearch.toLowerCase())
+  );
+
+ 
 
   return (
     <>
@@ -137,7 +191,7 @@ const Sidebar = () => {
 
           <div className="flex items-center justify-between mb-3 mt-4 px-3">
             <h2 className="text-white font-semibold text-lg">
-              {isUserManagement ? "User Management" : "Time Tracking"}
+              {isUserManagement ? "User Management" : isTaskManagement ? "Task Management" : "Time Tracking"}
             </h2>
           </div>
 
@@ -282,8 +336,8 @@ const Sidebar = () => {
                           router.push("/dashboard/user-management");
                         }}
                         className={`flex items-center py-2 cursor-pointer transition-all duration-200 ease-in-out px-3 ${activeTeam === "All Teams"
-                            ? "bg-gradient-to-r from-indigo-900/70 to-gray-800 text-white border-l-3 border-indigo-500"
-                            : "text-gray-300 hover:bg-gray-800/50"
+                          ? "bg-gradient-to-r from-indigo-900/70 to-gray-800 text-white border-l-3 border-indigo-500"
+                          : "text-gray-300 hover:bg-gray-800/50"
                           }`}>
                         <div className="flex-shrink-0 flex items-center justify-center w-8 h-8">
                           <HiMiniUsers className="h-5 w-5 shrink-0 text-indigo-300" />
@@ -442,6 +496,118 @@ const Sidebar = () => {
                   </div>
                 </>
               )}
+
+              {/* TASK MANAGEMENT */}
+
+              {isTaskManagement && (
+                <>
+                  <div className="px-3">
+                    <button
+                      onClick={() =>
+                        setShowProjectModal(true)
+                      }
+                      className="mb-4 inline-flex w-full items-center cursor-pointer justify-center gap-2 rounded-md bg-indigo-800 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors duration-200">
+                      <Plus className="w-5 h-5" />
+                      New Project
+                    </button>
+                    <input
+                      type="text"
+                      placeholder="Search projects..."
+                      value={projectSearch}
+                      onChange={(e) =>
+                        setProjectSearch(e.target.value)
+                      }
+                      className="mb-4 w-full rounded-md bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-gray-700"></input>
+                  </div>
+
+                  <nav className="flex flex-1 flex-col mt-2">
+                    <div className="space-y-1 max-h-[400px]">
+
+                      {filteredProjects.map((project) => (
+                        <div
+                          key={project._id}
+                          className="relative"
+                        >
+                          <div
+                            onClick={() => {
+                              router.push(
+                                `/dashboard/task-management?project=${encodeURIComponent(project.name)}`
+                              );
+                            }}
+                            className={`py-2 group flex items-center justify-between cursor-pointer -mx-3 px-3 transition-all duration-200 ease-in-out ${activeProject === project.name
+                              ? "bg-gradient-to-r from-indigo-900/70 to-gray-800 shadow-md text-white border-l-3 border-indigo-500"
+                              : "text-gray-300 hover:bg-gray-800/50"
+                              }`}
+                          >
+                            <span className="flex items-center gap-x-2">
+                              <div className="flex-shrink-0 flex items-center justify-center w-8 h-8">
+                                <FolderClosed className="w-5 h-5 shrink-0 transition-transform group-hover:scale-110 duration-150 text-indigo-300" />
+                              </div>
+
+                              <span className="text-sm font-bold">
+                                {project.name}
+                              </span>
+                            </span>
+
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+
+                                  setOpenProjectMenu(
+                                    openProjectMenu === project._id
+                                      ? null
+                                      : project._id
+                                  );
+                                }}
+                                type="button"
+                                className="cursor-pointer p-1 hover:bg-gray-700 rounded-md"
+                              >
+                                <EllipsisVertical className="h-5 w-5 text-gray-400 hover:text-white" />
+                              </button>
+
+                              {openProjectMenu === project._id && (
+                                <div
+                                  role="menu"
+                                  className="absolute right-0 mt-1 w-32 origin-top-right bg-gray-800 border border-gray-700 rounded-md shadow-lg py-1 z-20"
+                                >
+                                  <button
+                                    onClick={() => {
+                                      setEditingProject(project);
+                                      setShowEditProjectModal(true);
+                                      setOpenProjectMenu(null);
+                                    }}
+                                    className="flex items-center w-full px-3 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-600"
+                                    role="menuitem"
+                                  >
+                                    <Pencil className="h-5 w-5 mr-2" />
+                                    Edit
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      setSelectedProject(project);
+                                      setShowDeleteProjectModal(true);
+                                      setOpenProjectMenu(null);
+                                    }}
+                                    className="flex items-center w-full px-3 py-2 text-sm font-semibold text-red-400 hover:bg-gray-600"
+                                    role="menuitem"
+                                  >
+                                    <HiOutlineTrash className="h-5 w-5 mr-2" />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                    </div>
+                  </nav>
+                </>
+              )}
+
             </div>
           </nav>
         </div>
@@ -473,6 +639,33 @@ const Sidebar = () => {
           fetchTeams={fetchTeams}
         />
       )}
+
+      {showProjectModal && (
+        <NewProject
+
+          setShowProjectModal={setShowProjectModal}
+          fetchProjects={fetchProjects}
+        />
+      )}
+
+      {showEditProjectModal && (
+        <NewProject
+
+          setShowProjectModal={setShowEditProjectModal}
+
+          editingProject={editingProject}
+          fetchProjects = {fetchProjects}
+        />
+      )}
+
+      {showDeleteProjectModal && (
+        <DeleteProject
+
+          selectedProject={selectedProject}
+          setShowDeleteProjectModal={setShowDeleteProjectModal}
+        />
+      )}
+
     </>
   );
 };

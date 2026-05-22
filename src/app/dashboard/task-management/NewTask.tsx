@@ -1,0 +1,385 @@
+"use client"
+
+import API from "@/api";
+import { Check } from 'lucide-react';
+import { TbSelector } from "react-icons/tb";
+import Image from "next/image";
+import logo from "@/assets/dashboard workcomposer logo.png";
+import { useEffect, useState } from 'react';
+
+interface NewTaskProps {
+    setShowNewTaskModal: React.Dispatch<
+        React.SetStateAction<boolean>
+    >;
+
+    fetchTasks: () => Promise<void>;
+}
+
+const NewTask = ({
+    setShowNewTaskModal,
+    fetchTasks,
+}: NewTaskProps) => {
+
+    const [title, setTitle] = useState("");
+    const [description, setDescription] = useState("");
+    const [dueDate, setDueDate] = useState("");
+
+    const [selectedProject, setSelectedProject] = useState("");
+
+    const [selectedPriority, setSelectedPriority] = useState("Medium");
+
+    const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+
+    const [projectOpen, setProjectOpen] = useState(false);
+    const [priorityOpen, setPriorityOpen] = useState(false);
+    const [assigneeOpen, setAssigneeOpen] = useState(false);
+
+    const [users, setUsers] = useState<any[]>([]);
+
+    const [projects, setProjects] = useState<any[]>([]);
+
+    const fetchUsers = async () => {
+        try {
+            const res = await API.get("/users");
+
+            setUsers(res.data);
+
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const fetchProjects = async () => {
+        try {
+            const res = await API.get("/projects");
+
+            setProjects(res.data || []);
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+    useEffect(() => {
+        fetchProjects();
+    }, []);
+
+
+    const priorities = [
+        "Low",
+        "Medium",
+        "High",
+    ];
+
+
+    const toggleAssignee = (assignee: string) => {
+        setSelectedAssignees((prev) =>
+            prev.includes(assignee)
+                ? prev.filter((item) => item !== assignee)
+                : [...prev, assignee]
+        );
+    };
+
+    const handleCreateTask = async (
+        e: React.FormEvent
+    ) => {
+        e.preventDefault();
+
+        try {
+            await API.post("/tasks", {
+                title,
+                description,
+                dueDate,
+                project: selectedProject,
+
+                priority: selectedPriority.toLowerCase(),
+
+                status: "todo",
+
+                assignedTo:
+                    selectedAssignees.length > 0
+                        ? selectedAssignees[0]
+                        : null,
+            });
+
+            await fetchTasks();
+
+            setShowNewTaskModal(false);
+
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
+    const allProjects = [
+        {
+            _id: "default-project",
+            name: "Default Project",
+        },
+
+        ...projects,
+    ]
+
+    return (
+        <>
+            <div role="dialog" className="relative z-50">
+                <div className="fixed inset-0 bg-gray-500/75 backdrop-blur-sm transition-opacity"></div>
+                <div
+                    onClick={() =>
+                        setShowNewTaskModal(false)
+                    }
+                    className="fixed inset-0 z-50 w-screen overflow-y-auto">
+                    <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                        <div
+                            onClick={(e) =>
+                                e.stopPropagation()
+                            }
+                            className="relative transform rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
+                            <header className="text-lg font-semibold text-gray-900">New Task</header>
+                            <div className="mt-4">
+                                <form onSubmit={handleCreateTask}
+                                    className="space-y-6">
+                                    <div>
+                                        <label htmlFor="title" className="block text-sm/6 font-medium text-gray-900">Title</label>
+                                        <div className="mt-2">
+                                            <input
+                                                id="title"
+                                                value={title}
+                                                onChange={(e) =>
+                                                    setTitle(e.target.value)
+                                                }
+                                                type="text"
+                                                placeholder="Enter task title"
+                                                className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"></input>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="description" className="block text-sm/6 font-medium text-gray-900">Description</label>
+                                        <div className="mt-2">
+                                            <textarea
+                                                value={description}
+                                                onChange={(e) =>
+                                                    setDescription(e.target.value)
+                                                }
+                                                id="description"
+                                                rows={4}
+                                                placeholder="Enter task description"
+                                                className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"></textarea>
+                                        </div>
+                                    </div>
+
+
+
+                                    <div>
+                                        <label className="block text-sm/6 font-medium text-gray-900">Select Project</label>
+                                        <div className="relative mt-2">
+                                            <button
+                                                onClick={() =>
+                                                    setProjectOpen(!projectOpen)
+                                                }
+                                                type="button"
+                                                aria-haspopup='listbox' aria-expanded='true' className="grid w-full cursor-default grid-cols-1 rounded-md bg-white py-1.5 pr-2 pl-3 text-left text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6">
+                                                <span className="col-start-1 row-start-1 truncate pr-6">{allProjects.find(
+                                                    (project) => project._id === selectedProject
+                                                )?.name || "Select Project"}</span>
+                                                <TbSelector className='col-start-1 row-start-1 size-5 self-center justify-self-end text-gray-500 sm:size-4' />
+                                            </button>
+
+                                            {projectOpen && (
+                                                <ul aria-orientation='vertical' role='listbox' className='absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm'>
+                                                    {allProjects.map((project) => (
+                                                        <li
+                                                            key={project._id}
+                                                            onClick={() => {
+                                                                setSelectedProject(project._id);
+                                                                setProjectOpen(false);
+                                                            }}
+                                                            role='option'
+                                                            className='relative cursor-pointer py-2 pr-9 pl-3 select-none hover:bg-gray-50'
+                                                        >
+                                                            <span
+                                                                className={`block truncate ${selectedProject === project._id
+                                                                    ? "font-semibold text-gray-900"
+                                                                    : "font-normal text-gray-700"
+                                                                    }`}
+                                                            >
+                                                                {project.name}
+                                                            </span>
+
+                                                            {selectedProject === project._id && (
+                                                                <span className='text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4'>
+                                                                    <Check className='size-5' />
+                                                                </span>
+                                                            )}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className='block text-sm/6 font-medium text-gray-900'>Priority</label>
+                                        <div className='relative mt-2'>
+                                            <button
+                                                onClick={() =>
+                                                    setPriorityOpen(!priorityOpen)
+                                                }
+                                                type='button'
+                                                aria-haspopup='listbox'
+                                                aria-expanded='true'
+                                                className='grid w-full cursor-default grid-cols-1 rounded-md bg-white py-1.5 pr-2 pl-3 text-left text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6'>
+                                                <span className='col-start-1 row-start-1 truncate pr-6'>{selectedPriority}</span>
+                                                <TbSelector className='col-start-1 row-start-1 size-5 self-center justify-self-end text-gray-500 sm:size-4' />
+                                            </button>
+
+                                            {priorityOpen && (
+                                                <ul aria-orientation='vertical' role='listbox' className='absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm'>
+                                                    {priorities.map((priority) => (
+                                                        <li
+                                                            key={priority}
+                                                            onClick={() => {
+                                                                setSelectedPriority(priority);
+                                                                setPriorityOpen(false);
+                                                            }}
+                                                            role='option'
+                                                            className='relative cursor-pointer py-2 pr-9 pl-3 select-none hover:bg-gray-50'
+                                                        >
+                                                            <span
+                                                                className={`block truncate ${selectedPriority === priority
+                                                                    ? "font-semibold text-gray-900"
+                                                                    : "font-normal text-gray-700"
+                                                                    }`}
+                                                            >
+                                                                {priority}
+                                                            </span>
+
+                                                            {selectedPriority === priority && (
+                                                                <span className='text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4'>
+                                                                    <Check className='size-5' />
+                                                                </span>
+                                                            )}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm/6 font-medium text-gray-900">
+                                            Due Date
+                                        </label>
+
+                                        <div className="mt-2">
+                                            <input
+                                                type="date"
+                                                value={dueDate}
+                                                onChange={(e) =>
+                                                    setDueDate(e.target.value)
+                                                }
+                                                className="block w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 outline-gray-300 focus:outline-2 focus:outline-indigo-600 sm:text-sm/6"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className='relative'>
+                                        <label className='block text-sm/6 font-medium text-gray-900'>Assignee</label>
+                                        <div className='relative mt-2'>
+                                            <input aria-expanded='true' aria-autocomplete='list' role='combobox' type='text' className='w-full rounded-md bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6'
+                                                value={
+                                                    selectedAssignees.length === 0
+                                                        ? ""
+                                                        : users
+                                                            .filter((user) =>
+                                                                selectedAssignees.includes(user._id)
+                                                            )
+                                                            .map((user) =>
+                                                                `${user.firstName} ${user.lastName}`
+                                                            )
+                                                            .join(", ")
+                                                }
+                                                readOnly
+                                                placeholder='Select assignee'></input>
+                                            <button
+                                                onClick={() =>
+                                                    setAssigneeOpen(!assigneeOpen)
+                                                }
+                                                type='button'
+                                                aria-haspopup='listbox'
+                                                className='absolute inset-y-0 right-0 flex items-center pr-2'>
+                                                <TbSelector className='col-start-1 row-start-1 size-5 self-center justify-self-end text-gray-500 sm:size-4' />
+                                            </button>
+
+                                            {assigneeOpen && (
+                                                <ul role='listbox' className='absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm'>
+                                                    <li
+                                                        onClick={() => {
+                                                            setSelectedAssignees([]);
+                                                        }}
+                                                        className='relative cursor-pointer py-2 pr-9 pl-3 hover:bg-gray-50'
+                                                    >
+                                                        <span className='font-medium text-gray-900'>
+                                                            - No Assignee -
+                                                        </span>
+
+                                                        {selectedAssignees.length === 0 && (
+                                                            <span className='text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4'>
+                                                                <Check className='h-5 w-5' />
+                                                            </span>
+                                                        )}
+                                                    </li>
+
+                                                    {users.map((user) => (
+                                                        <li
+                                                            key={user._id}
+                                                            onClick={() => toggleAssignee(user._id)}
+                                                            className='relative cursor-pointer py-2 pr-9 pl-3 hover:bg-gray-50'
+                                                        >
+                                                            <div className='flex items-center'>
+                                                                <Image
+                                                                    className='h-6 w-6 rounded-full'
+                                                                    src={logo}
+                                                                    alt='Avatar'
+                                                                />
+
+                                                                <span
+                                                                    className={`ml-3 truncate ${selectedAssignees.includes(user._id)
+                                                                        ? "font-semibold text-gray-900"
+                                                                        : "font-normal text-gray-700"
+                                                                        }`}
+                                                                >
+                                                                    {user.firstName} {user.lastName}
+                                                                </span>
+                                                            </div>
+
+                                                            {selectedAssignees.includes(user._id) && (
+                                                                <span className='text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4'>
+                                                                    <Check className='h-5 w-5' />
+                                                                </span>
+                                                            )}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className='text-center'>
+                                        <button type='submit' className='inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50'>Create Task</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}
+
+export default NewTask
