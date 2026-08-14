@@ -33,7 +33,7 @@ export default function OverviewContentModule({
     const [showModal, setShowModal] = useState(false);
 
     const [showRemoveModal, setShowRemoveModal] = useState(false);
-
+    const [isOverviewLoading, setIsOverviewLoading] = useState(true);
     const [refresh, setRefresh] = useState(0);
 
     const formattedDate = formatDateForApi(
@@ -66,7 +66,7 @@ export default function OverviewContentModule({
                     ? data
                     : [];
 
-                   
+
 
             setAllUsers(users);
 
@@ -77,16 +77,20 @@ export default function OverviewContentModule({
     };
 
     useEffect(() => {
-    fetchAllUsers();
-}, []);
+        fetchAllUsers();
+    }, []);
 
     const fetchOverview = async () => {
+        setIsOverviewLoading(true);
+
         try {
             const res = await API.get(
                 `/sessions/overview?startDate=${startDate}&endDate=${endDate}`
             );
 
-            let overviewData = res.data;
+            let overviewData = Array.isArray(res.data)
+                ? res.data
+                : [];
 
             // TEAM FILTER
             if (selectedTeams.length > 0) {
@@ -108,7 +112,8 @@ export default function OverviewContentModule({
             if (selectedUsers.length > 0) {
                 overviewData = overviewData.filter((item: any) =>
                     selectedUsers.some(
-                        (user: any) => String(user._id) === String(item.id)
+                        (user: any) =>
+                            String(user._id) === String(item.id)
                     )
                 );
             }
@@ -176,10 +181,12 @@ export default function OverviewContentModule({
             setData(formattedData);
 
         } catch (err) {
-            console.error(err);
+            console.error("FAILED TO FETCH OVERVIEW:", err);
+            setData([]);
+        } finally {
+            setIsOverviewLoading(false);
         }
     };
-
     useEffect(() => {
         fetchOverview();
     }, [
@@ -234,6 +241,7 @@ export default function OverviewContentModule({
 
                 <OverviewContent
                     data={data}
+                    loading={isOverviewLoading}
                     allUsers={allUsers}
                     reportRange={reportRange}
                     onAddManualTime={() => setShowModal(true)}
