@@ -28,7 +28,7 @@ type DataItem = {
 
 type Props = {
   data?: DataItem[];
-
+  loading?: boolean;
   allUsers: any[];
 
   reportRange: {
@@ -43,6 +43,7 @@ type Props = {
 
 export default function OverviewContent({
   data = [],
+  loading = false,
   allUsers = [],
   reportRange,
   onAddManualTime,
@@ -111,12 +112,24 @@ export default function OverviewContent({
         <div className="px-2 py-4 sm:px-4">
 
           {/* EMPTY STATE */}
-          {data.length === 0 ? (
+          {loading ? (
+            <div className="flex min-h-[180px] items-center justify-center">
+              <div className="flex flex-col items-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-indigo-600" />
+
+                <p className="mt-3 text-sm font-medium text-gray-500">
+                  Loading tracking data...
+                </p>
+              </div>
+            </div>
+          ) : data.length === 0 ? (
             <div className="text-center my-8 py-6 px-4 bg-gray-50 rounded-lg border border-gray-100">
               <Clock3 className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+
               <h4 className="text-gray-600 font-medium mb-1">
                 No tracking data available
               </h4>
+
               <p className="text-gray-400 text-sm">
                 Tracking information will be displayed here once activity is recorded.
               </p>
