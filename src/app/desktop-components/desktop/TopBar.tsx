@@ -16,10 +16,6 @@ export default function TopBar() {
     selectedProject,
   } = useProject();
 
-  useEffect(() => {
-    console.log(selectedProject);
-  }, [selectedProject]);
-
   const {
     setActivePage,
     setActiveReport,
@@ -74,10 +70,6 @@ export default function TopBar() {
     }
   }, [lastStartedAt, lastStoppedAt]);
 
-
-  useEffect(() => {
-    console.log("SELECTED PROJECT:", selectedProject);
-  }, [selectedProject]);
 
   const handleFinishDay = async () => {
     try {

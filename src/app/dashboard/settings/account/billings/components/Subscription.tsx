@@ -104,11 +104,6 @@ export default function Subscription() {
                 }
             );
 
-            console.log(
-                "STRIPE PLAN CHANGED:",
-                response.data
-            );
-
             // Refresh subscription from backend
             await fetchSubscription();
 

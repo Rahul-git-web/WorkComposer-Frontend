@@ -37,11 +37,6 @@ export default function BillingPage() {
                     }
                 );
 
-                console.log(
-                    "STRIPE CHECKOUT SYNCED:",
-                    response.data
-                );
-
                 // Remove checkout parameters from URL
                 window.history.replaceState(
                     {},

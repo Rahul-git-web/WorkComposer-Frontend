@@ -8,5 +8,5 @@ export const getAvatarUrl = (avatar?: string | null) => {
         return avatar;
     }
 
-    return `http://localhost:5000/${avatar}`;
+    return `${process.env.NEXT_PUBLIC_API_ORIGIN}/${avatar}`;
 };

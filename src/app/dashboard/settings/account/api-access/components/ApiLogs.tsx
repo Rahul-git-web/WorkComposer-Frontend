@@ -18,7 +18,6 @@ export default function ApiLogs() {
         page
     );
 
-    console.log(logs);
 
     if (loading) {
         return (

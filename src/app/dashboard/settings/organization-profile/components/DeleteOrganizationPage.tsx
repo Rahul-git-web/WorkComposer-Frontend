@@ -59,7 +59,7 @@ const DeleteOrganizationPage = ({
                 typeof window !== "undefined" ? window.electronAPI : null;
 
             if (electronAPI) {
-                await electronAPI.saveToken("");
+                await electronAPI.saveToken("", "");
             }
 
             setTimeout(() => {

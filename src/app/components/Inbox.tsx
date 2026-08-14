@@ -57,11 +57,9 @@ const Inbox = ({
 
             setRequests(data);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
-
-    console.log(requests);
 
     const approveRequest = async (id: string) => {
     try {
@@ -121,7 +119,7 @@ const Inbox = ({
 
             setUsers(data);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
 
@@ -182,7 +180,7 @@ const Inbox = ({
             );
 
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
 

@@ -41,10 +41,6 @@ export default function useTimeTrackingSettings() {
 
     useEffect(() => {
         const handleSettingsUpdated = (updatedSettings: any) => {
-            console.log(
-                "TRACKING SETTINGS UPDATED:",
-                updatedSettings
-            );
 
             setSettings(updatedSettings);
         };

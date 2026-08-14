@@ -120,7 +120,7 @@ export default function JiraPage() {
                             <button
                                 onClick={() => {
                                     window.location.href =
-                                        "http://localhost:5000/api/integrations/jira/connect";
+                                        `${process.env.NEXT_PUBLIC_API_URL}/integrations/jira/connect`;
                                 }}
                                 className="mt-8 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3 font-medium text-white transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg"
                             >

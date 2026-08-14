@@ -60,7 +60,7 @@ export default function RejectRequestModal({
             onClose();
 
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
 

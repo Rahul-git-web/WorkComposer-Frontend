@@ -226,7 +226,7 @@ export default function ReportsModal({
                                 </div>
 
                                 <a
-                                    href={`http://localhost:5000${latestCompletedReport.fileUrl}`}
+                                    href={`${process.env.NEXT_PUBLIC_API_ORIGIN}${latestCompletedReport.fileUrl}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
@@ -298,7 +298,7 @@ export default function ReportsModal({
                                 <div className="flex gap-2">
                                     {report.status === "done" && (
                                         <a
-                                            href={`http://localhost:5000${report.fileUrl}`}
+                                            href={`${process.env.NEXT_PUBLIC_API_ORIGIN}${report.fileUrl}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex bg-indigo-600 text-white px-3 py-1 rounded-md text-sm gap-1"

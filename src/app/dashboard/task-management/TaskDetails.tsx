@@ -681,7 +681,6 @@ const { user } = useDashboard();
                                                     </p>
                                                 ) : (
                                                     comments.map((comment: any) => {
-                                                        console.log(comment.user);
                                                         return (
                                                             <div
                                                                 key={comment._id}

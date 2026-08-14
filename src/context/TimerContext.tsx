@@ -89,11 +89,6 @@ export const TimerProvider = ({ children }: Props) => {
 
   useEffect(() => {
     if (!effectiveSettings) return;
-
-    console.log(
-      "EFFECTIVE SETTINGS UPDATED",
-      effectiveSettings
-    );
   }, [effectiveSettings]);
 
   const refreshTodayWork = async () => {
@@ -103,7 +98,7 @@ export const TimerProvider = ({ children }: Props) => {
       setTodayWorkSeconds(data.workSeconds);
       setTodayBreakSeconds(data.breakSeconds);
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   };
 
@@ -114,12 +109,11 @@ export const TimerProvider = ({ children }: Props) => {
     projectId: string | null = null,
     taskId: string | null = null
   ) => {
-    console.log("USER ID:", userId);
 
     if (isTracking) return;
 
     if (!attendanceChecked) {
-      console.log("ATTENDANCE STATUS NOT READY");
+
       return;
     }
 
@@ -129,10 +123,6 @@ export const TimerProvider = ({ children }: Props) => {
     );
     return;
 }
-    console.log({
-      projectId,
-      taskId,
-    });
 
     socket.emit("startTimer", {
       userId,
@@ -192,7 +182,6 @@ useEffect(() => {
 
     const removeListener =
       window.electronAPI?.onAutoStartTracking(() => {
-        console.log("AUTO START FROM SHIFT");
 
         if (isTrackingRef.current) return;
 
@@ -229,8 +218,6 @@ useEffect(() => {
 
   // STOP
   const stop = useCallback(async () => {
-    console.log("STOP CALLED");
-    console.log("TIMER:", timer);
 
     if (!timer) return;
 
@@ -246,7 +233,6 @@ useEffect(() => {
 
     const removeListener =
       window.electronAPI?.onAutoStopTracking(() => {
-        console.log("AUTO STOP FROM SHIFT");
 
         if (!isTrackingRef.current) return;
 
@@ -278,7 +264,6 @@ useEffect(() => {
 
         const { data } = await API.post("/attendance/finish");
 
-        console.log("WORKDAY FINISHED:", data);
 
         setFinishedToday(true);
 
@@ -324,25 +309,20 @@ useEffect(() => {
           setDuration(
             Math.floor((now - start) / 1000)
           );
-
-          console.log("Restored Timer", res.data);
         }
       } catch (err) {
-        console.log(err);
+        console.error(err);
       }
     }
 
     getActiveTimer();
 
     window.electronAPI?.onIdleWarning(() => {
-      console.log("IDLE WARNING RECEIVED");
-
       setIdleCountdown(20);
       setShowIdleModal(true);
     });
 
     window.electronAPI?.onIdleResumed(() => {
-      console.log("USER ACTIVE AGAIN");
 
       setShowIdleModal(false);
       setIdleCountdown(20);
@@ -353,8 +333,6 @@ useEffect(() => {
     socket.off("timerStopped");
 
     socket.on("timerStarted", (data) => {
-      console.log("========== TIMER STARTED ==========");
-      console.log(data);
 
       setTimer(data);
       setIsTracking(true);
@@ -365,8 +343,6 @@ useEffect(() => {
       );
 
       setLastStartedAt(Date.now());
-
-      console.log("isTracking should now be TRUE");
     });
 
     socket.on("timerStopped", (data) => {
@@ -381,8 +357,6 @@ useEffect(() => {
       });
 
       setLastStoppedAt(Date.now());
-
-      console.log("Stopped", data);
     });
 
 
@@ -406,7 +380,7 @@ useEffect(() => {
       if (
         effectiveSettings?.tracking?.continueTrackingDuringSleep
       ) {
-        console.log("CONTINUING AFTER SLEEP");
+
         return;
       }
 
@@ -414,13 +388,8 @@ useEffect(() => {
         (effectiveSettings?.tracking?.sleepBreakHours || 0) * 60 +
         (effectiveSettings?.tracking?.sleepBreakMinutes || 0);
 
-      console.log("ALLOWED:", allowed);
-
       if (sleep.sleptMinutes > allowed) {
-        console.log("WILL STOP TRACKING");
         handlingSleep.current = true;
-
-        console.log("STOPPING AFTER SLEEP");
 
         stop();
       }
@@ -436,7 +405,6 @@ useEffect(() => {
   useEffect(() => {
     const removeTrackingBarListener =
       window.electronAPI?.onTrackingBarStop(() => {
-        console.log("TRACKING BAR REQUESTED STOP");
         stop();
       });
 
@@ -502,12 +470,9 @@ useEffect(() => {
           `/attendance/summary/${user._id}`
         );
 
-        console.log("TODAY ATTENDANCE:", data);
-
         setFinishedToday(Boolean(data.finishTime));
 
       } catch (err) {
-        console.log("ATTENDANCE CHECK ERROR:", err);
 
         // If the check fails, don't assume the day is finished.
         setFinishedToday(false);
