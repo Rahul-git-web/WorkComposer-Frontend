@@ -8,6 +8,8 @@ import { IoCalendarClearOutline } from "react-icons/io5";
 import { Clock3, ChevronDown, Eye } from "lucide-react";
 import { PiInfo } from "react-icons/pi";
 import { AiOutlineFileText } from "react-icons/ai";
+import toast from "react-hot-toast";
+import { useRef } from "react";
 
 //  TYPES 
 type Props = {
@@ -28,7 +30,26 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
     const [previewLoading, setPreviewLoading] = useState(false);
     const [reportData, setReportData] = useState<any>(null);
 
+    const modalRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+        const handleMouseDown = (e: MouseEvent) => {
+            if (
+                modalRef.current &&
+                !modalRef.current.contains(e.target as Node)
+            ) {
+                onClose();
+            }
+        };
+
+        document.addEventListener("mousedown", handleMouseDown);
+
+        return () =>
+            document.removeEventListener(
+                "mousedown",
+                handleMouseDown
+            );
+    }, [onClose]);
 
     const handleDelete = async () => {
         try {
@@ -46,11 +67,11 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
 
             onDelete?.();
 
-            console.log("DELETE CLICKED", start, end)
-
         } catch (err: any) {
-            console.log("FULL ERROR:", err.response?.data || err.message);
-            alert(err.response?.data?.message || "Delete failed");
+            toast.error(
+                err.response?.data?.error ||
+                "Delete failed."
+            );
         } finally {
             setLoading(false);
         }
@@ -103,7 +124,7 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
 
             setPreviewData(res.data);
         } catch (err) {
-            console.log("Preview failed", err);
+            toast.error("Preview failed");
         } finally {
             setPreviewLoading(false);
         }
@@ -138,10 +159,10 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
                         onClick={onClose}
                         className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"></div>
 
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto p-2 sm:p-4">
                         <div
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-4xl transform overflow-hidden rounded-xl bg-white p-6 shadow-xl transition-all">
+                            ref={modalRef}
+                            className="w-full max-w-4xl transform overflow-hidden rounded-xl bg-white p-4 sm:p-6 shadow-xl transition-all">
 
                             {/* HEADER */}
                             <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
@@ -156,7 +177,7 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
                                 </h3>
 
                                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-4">
-                                    <div className="flex items-center justify-between mb-3">
+                                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="flex items-center">
                                             <Clock3 className="h-5 w-5 text-indigo-500 mr-2" />
                                             <span className="text-sm font-medium text-gray-700">Select Time Range to Delete</span>
@@ -178,7 +199,7 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <div className="flex gap-2 items-end w-full">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full items-end">
                                                     <div className="w-full">
                                                         <label className="block text-sm font-medium text-gray-900">
                                                             Year
@@ -303,7 +324,7 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex gap-2 items-end w-full">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full items-end">
                                                     <div className="w-full">
                                                         <label className="block text-sm font-medium text-gray-900">
                                                             Hour
@@ -444,7 +465,7 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <div className="flex gap-2 items-end w-full">
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full items-end">
                                                     <div className="w-full">
                                                         <label className="block text-sm font-medium text-gray-900">
                                                             Year
@@ -568,7 +589,7 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex gap-2 items-end w-full">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full items-end">
                                                     <div className="w-full">
                                                         <label className="block text-sm font-medium text-gray-900">
                                                             Hour
@@ -756,7 +777,7 @@ const RemoveTime = ({ onClose, onDelete }: Props) => {
 
 
 
-                                    <div className="text-center">
+                                    <div className="flex justify-center">
                                         <button
                                             onClick={handleDelete}
                                             disabled={loading || !previewData || previewData.sessionsCount === 0}

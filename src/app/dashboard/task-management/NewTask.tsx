@@ -4,7 +4,6 @@ import API from "@/api";
 import { Check } from 'lucide-react';
 import { TbSelector } from "react-icons/tb";
 import Image from "next/image";
-import logo from "@/assets/dashboard workcomposer logo.png";
 import { useEffect, useState } from 'react';
 
 interface NewTaskProps {
@@ -28,10 +27,13 @@ const NewTask = ({
 
     const [selectedPriority, setSelectedPriority] = useState("Medium");
 
+    const [selectedStatus, setSelectedStatus] = useState("Todo");
+
     const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
 
     const [projectOpen, setProjectOpen] = useState(false);
     const [priorityOpen, setPriorityOpen] = useState(false);
+    const [statusOpen, setStatusOpen] = useState(false);
     const [assigneeOpen, setAssigneeOpen] = useState(false);
 
     const [users, setUsers] = useState<any[]>([]);
@@ -45,23 +47,32 @@ const NewTask = ({
             setUsers(res.data);
 
         } catch (err) {
-            console.log(err);
+            console.error(err);
+        }
+    };
+
+    const fetchProjects = async () => {
+        try {
+            const res = await API.get("/projects");
+
+            const uniqueProjects = Array.from(new Map(
+                res.data.map((project: any) =>
+                    [
+                        project._id,
+                        project,
+                    ])
+            ).values()
+            );
+
+            setProjects(uniqueProjects);
+        } catch (err) {
+            console.error(err);
         }
     };
 
     useEffect(() => {
         fetchUsers();
     }, []);
-
-    const fetchProjects = async () => {
-        try {
-            const res = await API.get("/projects");
-
-            setProjects(res.data || []);
-        } catch (err) {
-            console.log(err);
-        }
-    };
 
     useEffect(() => {
         fetchProjects();
@@ -73,6 +84,12 @@ const NewTask = ({
         "Medium",
         "High",
     ];
+
+ const statuses = [
+  "Todo",
+  "In Progress",
+  "Completed",
+];
 
 
     const toggleAssignee = (assignee: string) => {
@@ -93,11 +110,14 @@ const NewTask = ({
                 title,
                 description,
                 dueDate,
-                project: selectedProject,
+                project:
+                    selectedProject,
 
                 priority: selectedPriority.toLowerCase(),
 
-                status: "todo",
+                status: selectedStatus
+                    .toLowerCase()
+                    .replace(" ", "-"),
 
                 assignedTo:
                     selectedAssignees.length > 0
@@ -110,18 +130,11 @@ const NewTask = ({
             setShowNewTaskModal(false);
 
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
 
-    const allProjects = [
-        {
-            _id: "default-project",
-            name: "Default Project",
-        },
-
-        ...projects,
-    ]
+    const allProjects = projects;
 
     return (
         <>
@@ -272,6 +285,57 @@ const NewTask = ({
 
                                     <div>
                                         <label className="block text-sm/6 font-medium text-gray-900">
+                                            Status
+                                        </label>
+
+                                        <div className="relative mt-2">
+                                            <button
+                                                onClick={() => setStatusOpen(!statusOpen)}
+                                                type="button"
+                                                className="grid w-full cursor-default grid-cols-1 rounded-md bg-white py-1.5 pr-2 pl-3 text-left text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+                                            >
+                                                <span className="col-start-1 row-start-1 truncate pr-6">
+                                                    {selectedStatus}
+                                                </span>
+
+                                                <TbSelector className="col-start-1 row-start-1 size-5 self-center justify-self-end text-gray-500 sm:size-4" />
+                                            </button>
+
+                                            {statusOpen && (
+                                                <ul className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 sm:text-sm">
+
+                                                    {statuses.map((status) => (
+                                                        <li
+                                                            key={status}
+                                                            onClick={() => {
+                                                                setSelectedStatus(status);
+                                                                setStatusOpen(false);
+                                                            }}
+                                                            className="relative cursor-pointer py-2 pr-9 pl-3 hover:bg-gray-50"
+                                                        >
+                                                            <span
+                                                                className={`block truncate ${selectedStatus === status
+                                                                    ? "font-semibold text-gray-900"
+                                                                    : "font-normal text-gray-700"
+                                                                    }`}
+                                                            >
+                                                                {status}
+                                                            </span>
+
+                                                            {selectedStatus === status && (
+                                                                <span className="text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4">
+                                                                    <Check className="size-5" />
+                                                                </span>
+                                                            )}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm/6 font-medium text-gray-900">
                                             Due Date
                                         </label>
 
@@ -341,11 +405,20 @@ const NewTask = ({
                                                             className='relative cursor-pointer py-2 pr-9 pl-3 hover:bg-gray-50'
                                                         >
                                                             <div className='flex items-center'>
-                                                                <Image
-                                                                    className='h-6 w-6 rounded-full'
-                                                                    src={logo}
-                                                                    alt='Avatar'
-                                                                />
+                                                                {user.avatar?.trim() ? (
+                                                                    <Image
+                                                                        src={user.avatar}
+                                                                        alt={`${user.firstName} ${user.lastName}`}
+                                                                        width={24}
+                                                                        height={24}
+                                                                        unoptimized
+                                                                        className="h-6 w-6 rounded-full object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-semibold">
+                                                                        {user.firstName?.charAt(0).toUpperCase()}
+                                                                    </div>
+                                                                )}
 
                                                                 <span
                                                                     className={`ml-3 truncate ${selectedAssignees.includes(user._id)

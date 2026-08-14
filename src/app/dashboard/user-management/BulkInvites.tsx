@@ -4,6 +4,7 @@ import { X, Check, SendHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import API from "@/api";
 import { TbSelector } from "react-icons/tb";
+import toast from 'react-hot-toast';
 
 const roles = [
     "user",
@@ -11,121 +12,134 @@ const roles = [
     "admin",
 ]
 
-interface BulkInvitesProps {
+type BulkInvitesProps = {
     setShowBulkInvite: React.Dispatch<React.SetStateAction<boolean>>;
-
-    setUsers: React.Dispatch<React.SetStateAction<any[]>
-    >;
-}
+    setUsers: React.Dispatch<React.SetStateAction<any[]>>;
+    onUserAdded: () => Promise<void>;
+};
 
 
 const BulkInvites = ({
     setShowBulkInvite,
     setUsers,
+    onUserAdded,
 }: BulkInvitesProps) => {
 
     const [emails, setEmails] = useState("");
-    const [selectedTeam, setSelectedTeam] = useState("Default team");
+    const [selectedTeam, setSelectedTeam] = useState("");
     const [teamDropdown, setTeamDropdown] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [successMessage, setSuccessMessage] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
-    const [failedEmails, setFailedEmails] = useState<string[]>([]);
+    type FailedEmail = {
+        email: string;
+        reason: string;
+    };
+
+    const [failedEmails, setFailedEmails] = useState<FailedEmail[]>([]);
     const [selectedRole, setSelectedRole] = useState("user");
     const [roleDropdown, setRoleDropdown] = useState(false);
     const [teams, setTeams] = useState<any[]>([]);
 
-    const handleSubmit = async (
-        e: React.FormEvent
-    ) => {
-
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (loading) return;
+
+        const emailArray = emails
+            .split(/[\n,|]+/)
+            .map((email) => email.trim().toLowerCase())
+            .filter(Boolean);
+
+        // No emails
+        if (emailArray.length === 0) {
+            toast.error("Please enter at least one email");
+            return;
+        }
+
+        // Email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        const invalidEmails = emailArray.filter(
+            (email) => !emailRegex.test(email)
+        );
+
+        if (invalidEmails.length > 0) {
+            toast.error(
+                `Invalid email(s): ${invalidEmails.join(", ")}`
+            );
+            return;
+        }
+
+        // Duplicate emails in the same request
+        const duplicateEmails = emailArray.filter(
+            (email, index) =>
+                emailArray.indexOf(email) !== index
+        );
+
+        if (duplicateEmails.length > 0) {
+            toast.error(
+                `Duplicate email: ${duplicateEmails[0]}`
+            );
+            return;
+        }
+
+        // Team required
+        if (!selectedTeam) {
+            toast.error("Please select a team");
+            return;
+        }
 
         try {
             setLoading(true);
-
-            setSuccessMessage("");
-            setErrorMessage("")
             setFailedEmails([]);
 
-            const emailArray = emails
-                .split(/[|n,]+/)
-                .map((email) => email.trim())
-                .filter(Boolean);
+            const res = await API.post("/users/bulk-invite", {
+                emails: emailArray,
+                role: selectedRole,
+                team: selectedTeam,
+            });
 
-            setErrorMessage("");
+            // Refresh users without refreshing browser
+            await onUserAdded();
 
-            const emailRegex =
-                /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-            const invalidEmails = emailArray.filter(
-                (email) => !emailRegex.test(email)
-            );
-
-            if (invalidEmails.length > 0) {
-
-                setErrorMessage(
-                    `Invalid email(s): ${invalidEmails.join(", ")}`
+            // Successful invitations
+            if (res.data.success?.length > 0) {
+                toast.success(
+                    res.data.success.length === 1
+                        ? "Invitation sent successfully"
+                        : `${res.data.success.length} invitations sent successfully`
                 );
-
-                return;
             }
 
-            if (emailArray.length === 0) {
-                setErrorMessage("Please enter at least one email");
-                return;
-            }
+            // Failed invitations
+            if (res.data.failed?.length > 0) {
+                setFailedEmails(res.data.failed);
 
-            const res = await API.post(
-                "/users/bulk-invite",
-                {
-                    emails: emailArray,
-                    role: selectedRole,
-                    team: selectedTeam,
-                }
-            );
-
-            console.log(res.data);
-
-            const updatedUsers = await API.get("/users/all-users");
-
-            setUsers(updatedUsers.data);
-
-            setSuccessMessage(
-                `${res.data.success.length}
-                invitation(s) sent successfully`
-            );
-
-            if (res.data.failed.length > 0) {
-
-                setFailedEmails(
-                    res.data.failed
+                toast.error(
+                    `${res.data.failed.length} invitation(s) failed`
                 );
+            } else {
+                setShowBulkInvite(false);
             }
 
             setEmails("");
 
         } catch (err: any) {
+            console.error("BULK INVITE ERROR:", err);
 
-            console.log(err);
-
-            setErrorMessage(
+            toast.error(
                 err?.response?.data?.message ||
                 "Failed to send invitations"
             );
-
         } finally {
-
             setLoading(false);
         }
     };
-
     const fetchTeams = async () => {
         try {
             const res = await API.get("/teams");
             setTeams(res.data || []);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
 
@@ -157,19 +171,6 @@ const BulkInvites = ({
                             <div className='text-sm text-gray-600'>Send invitation(s) to join your organization</div>
                             <div className='mt-1 text-xs font-medium text-gray-500'> Enter a comma-separated list of the email addresses to invite.</div>
 
-
-                            {successMessage && (
-                                <div className="mb-4 rounded-md bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-700">
-                                    {successMessage}
-                                </div>
-                            )}
-
-                            {errorMessage && (
-                                <div className="mb-4 rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                                    {errorMessage}
-                                </div>
-                            )}
-
                             {failedEmails.length > 0 && (
 
                                 <div className="mb-4 rounded-md border border-yellow-200 bg-yellow-50 px-4 py-3">
@@ -180,10 +181,16 @@ const BulkInvites = ({
 
                                     <ul className="space-y-1 text-sm text-yellow-700">
 
-                                        {failedEmails.map((email) => (
+                                        {failedEmails.map((item, index) => (
+                                            <li key={`${item.email}-${index}`}>
+                                                <span className="font-medium">
+                                                    •  {item.email}
+                                                </span>
 
-                                            <li key={email}>
-                                                • {email}
+                                                <span className="text-gray-500">
+                                                    {" — "}
+                                                    {item.reason}
+                                                </span>
                                             </li>
                                         ))}
                                     </ul>
@@ -211,7 +218,10 @@ const BulkInvites = ({
                                                 setTeamDropdown(!teamDropdown)
                                             }
                                             aria-haspopup='listbox' aria-expanded='true' aria-labelledby="team-label" aria-controls="team-listbox" className='relative w-full cursor-default rounded-md border-0 py-2 px-3 text-left text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm'>
-                                            <span className='block truncate'>{selectedTeam}</span>
+                                            <span className="block truncate">
+                                                {teams.find((team) => team._id === selectedTeam)?.name ||
+                                                    "Select team"}
+                                            </span>
                                             <span className='pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2'>
                                                 <TbSelector className='h-5 w-5 text-gray-400' />
                                             </span>
@@ -220,20 +230,24 @@ const BulkInvites = ({
                                         {teamDropdown && (
                                             <ul id="team-listbox" aria-orientation='vertical' role='listbox' aria-labelledby="team-label" className='absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 sm:text-sm'>
 
-                                                {["Default team", ...teams.map((t) => t.name)].map((team) => (
+                                                {teams.map((team) => (
                                                     <li
-                                                        key={team}
+                                                        key={team._id}
                                                         onClick={() => {
-                                                            setSelectedTeam(team);
+                                                            setSelectedTeam(team._id);
                                                             setTeamDropdown(false);
                                                         }}
-                                                        className='text-gray-900 relative cursor-default select-none py-2 pl-3 pr-9' role='option' aria-selected='true' >
-                                                        <span className='font-medium block truncate'>{team}</span>
+                                                        className="text-gray-900 relative cursor-default select-none py-2 pl-3 pr-9"
+                                                        role="option"
+                                                        aria-selected={selectedTeam === team._id}
+                                                    >
+                                                        <span className="font-medium block truncate">
+                                                            {team.name}
+                                                        </span>
 
-                                                        {selectedTeam === team && (
-
-                                                            <span className='text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4'>
-                                                                <Check className='h-5 w-5' />
+                                                        {selectedTeam === team._id && (
+                                                            <span className="text-indigo-600 absolute inset-y-0 right-0 flex items-center pr-4">
+                                                                <Check className="h-5 w-5" />
                                                             </span>
                                                         )}
                                                     </li>

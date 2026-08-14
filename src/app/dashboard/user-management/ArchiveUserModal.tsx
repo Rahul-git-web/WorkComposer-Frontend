@@ -56,7 +56,7 @@ const ArchiveUserModal = ({
 
         } catch (err: any) {
 
-            console.log(err);
+            console.error(err);
 
             setErrorMessage(
                 err?.response?.data?.message ||

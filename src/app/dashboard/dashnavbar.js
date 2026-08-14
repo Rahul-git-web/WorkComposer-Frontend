@@ -6,19 +6,22 @@ import { FaUsers } from "react-icons/fa";
 import { IoIosPause } from "react-icons/io";
 import { usePathname, useRouter } from "next/navigation";
 import API from "@/api";
-import {
-  Clock3,
-  ChevronDown,
-  Settings,
-  Play,
-  Check,
-} from "lucide-react";
+import { Clock3, ChevronDown, Settings, Play, Check } from "lucide-react";
 import { HiOutlineInboxStack } from "react-icons/hi2";
 import { HiOutlineEnvelopeOpen } from "react-icons/hi2";
+import ReportsModal from "./time-tracking/attendance/reports/ReportsModal";
 
-const DashNavbar = ({ user, setTrackedSeconds }) => {
+import { useDashboard } from "@/context/DashboardContext";
+
+const DashNavbar = () => {
+  const { user } = useDashboard();
+
+  const canManageUsersTeams = user?.permissions?.includes("manage_users");
+
   const [appOpen, setAppOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const appRef = useRef(null);
   const profileRef = useRef(null);
 
@@ -29,14 +32,16 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
     ? "User Management"
     : pathname.startsWith("/dashboard/task-management")
       ? "Task Management"
-      : "Time Tracking";
+      : pathname.startsWith("/dashboard/settings")
+        ? "Settings"
+        : "Time Tracking";
 
   const handleLogout = async () => {
     try {
       await API.post("/auth/logout");
       router.push("/authenticate/login");
     } catch (err) {
-      console.log("Logout failed", err);
+     toast.error("Logout failed", err);
     }
   };
 
@@ -57,29 +62,60 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
 
   const avatarLetter = user?.email?.charAt(0).toUpperCase() || "U";
 
-  const { isTracking, isPaused, start, stop, pause, resume } = useTimer();
+  const { isTracking, start, stop } = useTimer();
 
   const handleTracking = () => {
-    if (isTracking || isPaused) {
+
+    if (!user?._id) {
+      toast.error("User not loaded");
+      return;
+    }
+
+    if (isTracking) {
       stop();
     } else {
-      start();
+      start(user?._id);
     }
   };
 
+  const fetchPendingCount = async () => {
+    try {
+      const { data } = await API.get("/manual-time-requests/count");
+
+      setPendingCount(data.count);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingCount();
+
+    const interval = setInterval(fetchPendingCount, 10000);
+
+    const refresh = () => fetchPendingCount();
+
+    window.addEventListener("refreshInboxCount", refresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("refreshInboxCount", refresh);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* LEFT */}
-        <div className="flex items-center gap-x-2 sm:gap-x-4">
+        <div className="flex items-center gap-x-2 sm:gap-x-4 pl-12 sm:pl-0">
           {/* Dropdown */}
           <div className="relative" ref={appRef}>
             <div className="flex items-center">
               <button
                 onClick={() => setAppOpen(!appOpen)}
-                className="flex items-center px-3 py-2 rounded bg-indigo-50 hover:bg-indigo-100 text-gray-800 border-r border-indigo-200 shadow-sm"
+                className="flex items-center px-2 py-2 sm:px-3 rounded bg-indigo-50 hover:bg-indigo-100 text-gray-800 sm:border-r border-indigo-200 shadow-sm"
               >
-                <Clock3 className="w-5 h-5 mr-2 text-indigo-600" />
+                <Clock3 className="w-5 h-5 sm:mr-2 text-indigo-600" />
                 <span className="text-sm font-semibold text-indigo-900 hidden sm:inline">
                   {currentApp}
                 </span>
@@ -95,16 +131,16 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
 
             {/* Dropdown Menu */}
             {appOpen && (
-              <div className="absolute mt-2 w-72 bg-[#020617] text-white rounded-xl shadow-lg p-4 z-50">
-                <p className="text-sm text-gray-400 mb-2">Apps</p>
+              <div className="absolute left-0 mt-2 w-[85vw] max-w-72 sm:w-72 bg-[#020617] text-white rounded-xl shadow-lg p-4 z-[60]">
+                <p className="text-sm text-gray-400 mb-1">Apps</p>
 
-                <div className="bg-gray-800 rounded-lg p-2 space-y-2">
+                <div className="bg-gray-800 rounded-lg p-2 space-y-1">
                   <div
                     onClick={() => {
                       router.push("/dashboard/time-tracking/overview");
                       setAppOpen(false);
                     }}
-                    className="flex items-center justify-between p-2 hover:bg-gray-700 rounded cursor-pointer"
+                    className="flex items-center justify-between p-1 hover:bg-gray-700 rounded cursor-pointer"
                   >
                     <span>Time Tracking</span>
                     {pathname.startsWith(
@@ -117,7 +153,7 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
                       router.push("/dashboard/task-management");
                       setAppOpen(false);
                     }}
-                    className="flex items-center justify-between p-2 hover:bg-gray-700 rounded cursor-pointer"
+                    className="flex items-center justify-between p-1 hover:bg-gray-700 rounded cursor-pointer"
                   >
                     <span>Task Management</span>
 
@@ -127,25 +163,37 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-400 mt-4 mb-2">Configuration</p>
+                <p className="text-sm text-gray-400 mt-3 mb-2">Configuration</p>
 
-                <div className="space-y-2">
+                <div className="space-y-1">
+                  {canManageUsersTeams && (
+                    <div
+                      onClick={() => {
+                        router.push("/dashboard/user-management");
+                        setAppOpen(false);
+                      }}
+                      className="flex items-center justify-between p-1 hover:bg-gray-700 rounded cursor-pointer"
+                    >
+                      <span>User Management</span>
+
+                      {pathname.startsWith("/dashboard/user-management") && (
+                        <Check className="w-4 h-4 text-green-400 ml-auto" />
+                      )}
+                    </div>
+                  )}
+
                   <div
                     onClick={() => {
-                      router.push("/dashboard/user-management");
+                      router.push("/dashboard/settings");
                       setAppOpen(false);
                     }}
-                    className="flex items-center justify-between p-2 hover:bg-gray-700 rounded cursor-pointer"
+                    className="flex items-center justify-between p-1 hover:bg-gray-700 rounded cursor-pointer"
                   >
-                    <span>User Management</span>
+                    <span>Settings</span>
 
-                    {pathname.startsWith("dashboard/user-management") && (
+                    {pathname.startsWith("/dashboard/settings/profile") && (
                       <Check className="w-4 h-4 text-green-400 ml-auto" />
                     )}
-                  </div>
-
-                  <div className="p-2 hover:bg-gray-700 rounded cursor-pointer">
-                    Settings
                   </div>
                 </div>
               </div>
@@ -153,14 +201,22 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
           </div>
 
           {/* Users */}
-          <button className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded text-sm font-semibold">
-            <FaUsers className="text-indigo-600" />
-            <span className="hidden sm:inline">Users</span>
-          </button>
+          {canManageUsersTeams && (
+            <button className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded text-sm font-semibold">
+              <FaUsers className="text-indigo-600" />
+              <span className="hidden sm:inline">Users</span>
+            </button>
+          )}
 
           {/* Settings */}
-          <button className="flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded text-sm font-semibold">
-            <Settings className="text-indigo-600 w-5 h-5" />
+          <button
+            onClick={() => router.push("/dashboard/settings/profile")}
+            className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded text-sm font-semibold transition ${
+              pathname.startsWith("/dashboard/settings")
+                ? "bg-indigo-600 text-white"
+                : "bg-indigo-50 hover:bg-indigo-100 text-gray-800"
+            }`}
+          >
             <span className="hidden sm:inline">Settings</span>
           </button>
         </div>
@@ -171,40 +227,56 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
           <button
             onClick={handleTracking}
             className={`flex items-center px-3 py-2 rounded text-sm font-semibold ${
-              isTracking || isPaused
+              isTracking
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-indigo-600 hover:bg-indigo-700"
             } text-white`}
           >
             <Play className="w-4 h-4" />
             <span className="ml-2 hidden sm:inline">
-              {isTracking || isPaused ? "Stop tracking" : "Start tracking"}
+              {isTracking ? "Stop tracking" : "Start tracking"}
             </span>
           </button>
 
-          {/* PAUSE / RESUME */}
-          {(isTracking || isPaused) && (
+          <div className="relative">
             <button
-              onClick={isTracking ? pause : resume}
-              className="flex items-center px-3 py-2 rounded text-sm font-semibold bg-yellow-500 hover:bg-yellow-600 text-white"
+              onClick={() => window.dispatchEvent(new Event("toggleInbox"))}
+              className="relative"
             >
-              {isTracking ? (
-                <>
-                  <IoIosPause className="w-4 h-4" />
-                  <span className="ml-2 hidden sm:inline">Pause</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  <span className="ml-2 hidden sm:inline">Resume</span>
-                </>
-              )}
+              <HiOutlineEnvelopeOpen className="w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer" />
             </button>
-          )}
 
-          <HiOutlineEnvelopeOpen className="w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer" />
+            {pendingCount > 0 && (
+              <span
+                className="
+                absolute
+                -top-2
+                -right-2
+                min-w-[20px]
+                h-5
+                px-1.5
+                rounded-full
+                bg-red-600
+                text-white
+                text-[11px]
+                font-bold
+                flex
+                items-center
+                justify-center
+                shadow
+            "
+              >
+                {pendingCount}
+              </span>
+            )}
+          </div>
 
-          <HiOutlineInboxStack className="w-6 h-6 text-gray-500 hover:text-gray-700 cursor-pointer" />
+          <button
+            onClick={() => setReportsOpen(true)}
+            className="cursor-pointer"
+          >
+            <HiOutlineInboxStack className="w-6 h-6 text-gray-500 hover:text-gray-700" />
+          </button>
 
           {/* // User Profile */}
 
@@ -213,9 +285,17 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2 cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-bold">
-                {avatarLetter}
-              </div>
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.firstName}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-bold">
+                  {avatarLetter}
+                </div>
+              )}
 
               <span className="text-sm text-gray-700 hidden md:block">
                 {user?.email || "user@example.com"}
@@ -225,12 +305,12 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
             </button>
 
             {profileOpen && (
-              <div className="absolute right-0 mt-2 w-64 sm:w-72 bg-[#020617] text-white rounded-xl shadow-lg p-4 z-50">
+              <div className="absolute right-0 mt-2 w-[85vw] max-w-72 sm:w-72 bg-[#020617] text-white rounded-xl shadow-lg p-4 z-[60]">
                 {/* Organization */}
                 <div className="mb-3">
                   <p className="text-sm text-white font-medium">Organization</p>
                   <p className="text-xs text-gray-400 font-sm">
-                    {user?.organization || "XYZ"}
+                    {user?.organization?.name || "XYZ"}
                   </p>
                 </div>
 
@@ -265,6 +345,8 @@ const DashNavbar = ({ user, setTrackedSeconds }) => {
           </div>
         </div>
       </div>
+
+      <ReportsModal open={reportsOpen} onClose={() => setReportsOpen(false)} />
     </header>
   );
 };

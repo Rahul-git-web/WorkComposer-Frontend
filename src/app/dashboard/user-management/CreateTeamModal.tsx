@@ -2,10 +2,13 @@
 
 import React, { useState } from 'react'
 import API from "@/api";
+import toast from 'react-hot-toast';
 
 interface CreateTeamModalPropa {
     setShowTeamModal: React.Dispatch<React.SetStateAction<boolean>>;
     fetchTeams: () => void;
+    editingTeam: any;
+    setEditingTeam: React.Dispatch<React.SetStateAction<any>>;
 }
 
 const CreateTeamModal = ({
@@ -27,15 +30,15 @@ const CreateTeamModal = ({
                 name: teamName,
             });
 
-            alert("Team created successfully");
+            toast.success("Team created successfully");
 
             fetchTeams();
 
             setShowTeamModal(false);
         } catch (err: any) {
-            console.log(err);
+            console.error(err);
 
-            alert(err?.response?.data?.message || "Failed to create team")
+            toast.error(err?.response?.data?.message || "Failed to create team")
         } finally {
             setLoading(false);
         }

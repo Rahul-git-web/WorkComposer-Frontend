@@ -8,11 +8,11 @@ import { FcGoogle } from "react-icons/fc";
 import Microsoft from "@/assets/microsoft.svg";
 import { FaApple } from "react-icons/fa";
 import { GoArrowRight } from "react-icons/go";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from 'next/navigation';
 import API from "@/api";
 
-export default function AcceptInviteUI() {
+function AcceptInviteUIContent() {
     const [form, setForm] = useState({
         firstName: "",
         lastName: "",
@@ -42,23 +42,34 @@ export default function AcceptInviteUI() {
             return;
         }
 
+        if (form.password.length < 8) {
+            setError("Password must be at least 8 characters");
+            return;
+        }
+
         try {
             setLoading(true);
             setError("");
             setMessage("");
 
-            await API.post("/users/accept-invite", {
+            const acceptRes = await API.post("/users/accept-invite", {
                 token,
                 ...form,
             });
 
             // Auto login
-            const loginRes = await API.post("/auth/login", {
+            await API.post("/auth/login", {
                 email,
                 password: form.password,
             });
 
-            localStorage.setItem("token", loginRes.data.token)
+            setMessage("Welcome to WorkComposer 🎉");
+
+            setTimeout(() => {
+                window.location.replace(
+                    "/dashboard/time-tracking/overview"
+                );
+            }, 1000);
 
             setMessage("Welcome to WorkComposer🎉")
             setTimeout(() => {
@@ -66,12 +77,13 @@ export default function AcceptInviteUI() {
             }, 1000)
 
         } catch (err: any) {
-            alert(err.response?.data?.message || "Something went wrong")
+            setError(
+                err.response?.data?.message ||
+                "Something went wrong"
+            );
         } finally {
             setLoading(false)
         }
-
-        // console.log(form); //Later will Replace by API
     }
 
     useEffect(() => {
@@ -83,9 +95,14 @@ export default function AcceptInviteUI() {
                 setRole(res.data.role);
                 setTeam(res.data.team);
             })
-            .catch(() => {
-                alert("Invalid or expired invite")
-            })
+            .catch((err) => {
+                console.error("INVITE DETAILS ERROR:", err);
+
+                setError(
+                    err.response?.data?.message ||
+                    "Invalid or expired invite"
+                );
+            });
     }, [token]);
 
 
@@ -243,6 +260,15 @@ export default function AcceptInviteUI() {
                 </div>
             </div>
         </>
+    )
+}
+
+export default function AcceptInviteUI() {
+    return (
+        <Suspense
+            fallback={<div>Loading...</div>}>
+            <AcceptInviteUIContent />
+        </Suspense>
     )
 }
 

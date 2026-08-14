@@ -1,21 +1,35 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import API from "@/api";
 import { User } from "lucide-react";
 import { Mail } from "lucide-react";
 import { Lock } from "lucide-react";
-import { Eye, CircleCheck, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, CircleCheck, ArrowRight } from "lucide-react";
 import { GoOrganization } from "react-icons/go";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 import Microsoft from "@/assets/microsoft.svg";
 import logoW from "@/assets/logo.W.png";
 
-const FreeTrialForm = () => {
+const FreeTrialFormContent = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const isGoogleSignup = searchParams.get("google") === "true";
+  const googleToken = searchParams.get("token");
+  const [googleUser, setGoogleUser] = useState(null);
+
+  const isMicrosoftSignup = searchParams.get("microsoft") === "true";
+  const microsoftToken = searchParams.get("token");
+  const [microsoftUser, setMicrosoftUser] = useState(null);
+
+  const isAppleSignup = searchParams.get("apple") === "true";
+  const appleToken = searchParams.get("token");
+  const [appleUser, setAppleUser] = useState(null);
+
   const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
     firstName: "",
@@ -25,6 +39,93 @@ const FreeTrialForm = () => {
     password: "",
     confirmPassword: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    const loadGoogleUser = async () => {
+      if (!isGoogleSignup || !googleToken) return;
+
+      try {
+        const { data } = await API.get(
+          `/auth/google-signup-info?token=${encodeURIComponent(googleToken)}`,
+        );
+
+        setGoogleUser(data);
+
+        setFormData((prev) => ({
+          ...prev,
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          email: data.email || "",
+          avatar: data.avatar || "",
+        }));
+      } catch (err) {
+        toast.error(
+          "GOOGLE SIGNUP INFO ERROR:",
+          err.response?.data || err.message,
+        );
+      }
+    };
+
+    loadGoogleUser();
+  }, [isGoogleSignup, googleToken]);
+
+  useEffect(() => {
+    const loadMicrosoftUser = async () => {
+      if (!isMicrosoftSignup || !microsoftToken) return;
+
+      try {
+        const { data } = await API.get(
+          `/auth/microsoft-signup-info?token=${encodeURIComponent(microsoftToken)}`,
+        );
+
+        setMicrosoftUser(data);
+
+        setFormData((prev) => ({
+          ...prev,
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          email: data.email || "",
+        }));
+      } catch (err) {
+        console.error(
+          "MICROSOFT SIGNUP INFO ERROR:",
+          err.response?.data || err.message,
+        );
+      }
+    };
+
+    loadMicrosoftUser();
+  }, [isMicrosoftSignup, microsoftToken]);
+
+  useEffect(() => {
+    const loadAppleUser = async () => {
+      if (!isAppleSignup || !appleToken) return;
+
+      try {
+        const { data } = await API.get(
+          `/auth/apple-signup-info?token=${encodeURIComponent(appleToken)}`,
+        );
+
+        setAppleUser(data);
+
+        setFormData((prev) => ({
+          ...prev,
+          firstName: data.firstName || "",
+          lastName: data.lastName || "",
+          email: data.email || "",
+        }));
+      } catch (err) {
+        console.error(
+          "APPLE SIGNUP INFO ERROR:",
+          err.response?.data || err.message,
+        );
+      }
+    };
+
+    loadAppleUser();
+  }, [isAppleSignup, appleToken]);
 
   const handleChange = (e) => {
     setFormData({
@@ -49,6 +150,14 @@ const FreeTrialForm = () => {
         email: formData.email,
         organization: formData.organization,
         password: formData.password,
+
+        ...(isGoogleSignup && googleUser
+          ? { googleId: googleUser.googleId, avatar: googleUser.avatar || "" }
+          : isMicrosoftSignup && microsoftUser
+            ? { microsoftId: microsoftUser.microsoftId }
+            : isAppleSignup && appleUser
+              ? { appleId: appleUser.appleId }
+              : {}),
       });
 
       setSuccess(res.data.message);
@@ -66,8 +175,7 @@ const FreeTrialForm = () => {
 
       router.push(`/authenticate/verify-mail?email=${email}`);
     } catch (err) {
-      console.log(err);
-      alert(err.response?.data?.message || "Something went wrong");
+      toast.error(err.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -104,6 +212,19 @@ const FreeTrialForm = () => {
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-indigo-600"></div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isGoogleSignup && googleUser?.avatar && (
+                <div className="flex justify-center mb-6">
+                  <img
+                    src={googleUser.avatar}
+                    alt="Google Profile"
+                    width={80}
+                    height={80}
+                    className="w-20 h-20 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label
@@ -178,6 +299,9 @@ const FreeTrialForm = () => {
                     required
                     maxLength={100}
                     name="email"
+                    readOnly={
+                      isGoogleSignup || isMicrosoftSignup || isAppleSignup
+                    }
                     placeholder="your.email@example.com"
                     tabIndex={3}
                     value={formData.email}
@@ -228,7 +352,7 @@ const FreeTrialForm = () => {
                     </div>
                     <input
                       id="password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       required
                       minLength={8}
                       tabIndex={5}
@@ -240,11 +364,18 @@ const FreeTrialForm = () => {
                     />
                     <button
                       type="button"
+                      onClick={() => setShowPassword(!showPassword)}
                       className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                      aria-label="Toggle password visibility"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                       tabIndex={6}
                     >
-                      <Eye className="w-5 h-5 text-gray-400" />
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -262,7 +393,7 @@ const FreeTrialForm = () => {
                     </div>
                     <input
                       id="password2"
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       required
                       minLength={8}
                       tabIndex={7}
@@ -274,11 +405,22 @@ const FreeTrialForm = () => {
                     />
                     <button
                       type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                       className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                      aria-label="Toggle password visibility"
+                      aria-label={
+                        showConfirmPassword
+                          ? "Hide confirm password"
+                          : "Show confirm password"
+                      }
                       tabIndex={8}
                     >
-                      <Eye className="w-5 h-5 text-gray-400" />
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -348,7 +490,7 @@ const FreeTrialForm = () => {
 
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <a
-                href="#"
+                href="http://localhost:5000/api/auth/google"
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-800 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 active:bg-gray-100 transition-all duration-200 shadow-sm"
                 tabIndex={10}
               >
@@ -356,23 +498,30 @@ const FreeTrialForm = () => {
                 <span>Google</span>
               </a>
 
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href =
+                    "http://localhost:5000/api/auth/microsoft";
+                }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-800 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 active:bg-gray-100 transition-all duration-200 shadow-sm"
-                tabIndex={11}
+                tabIndex={12}
               >
-                <Image src={Microsoft} alt="Microsoft" width={20} height={20} />
+                <Image src={Microsoft} alt="Microsoft" width={20} />
                 <span>Microsoft</span>
-              </a>
+              </button>
 
-              <a
-                href="#"
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = "http://localhost:5000/api/auth/apple";
+                }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-800 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 active:bg-gray-100 transition-all duration-200 shadow-sm"
                 tabIndex={12}
               >
                 <FaApple className="w-5 h-5" aria-hidden="true" />
                 <span>Apple</span>
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -398,4 +547,10 @@ const FreeTrialForm = () => {
   );
 };
 
-export default FreeTrialForm;
+export default function FreeTrialForm() {
+  return (
+    <Suspense fallback={null}>
+      <FreeTrialFormContent />
+    </Suspense>
+  );
+}

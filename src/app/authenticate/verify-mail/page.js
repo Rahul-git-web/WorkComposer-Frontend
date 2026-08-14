@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import API from "@/api";
 import Image from "next/image";
 
@@ -9,39 +9,13 @@ import logo from "@/assets/logo.W.png";
 import mailVerify from "@/assets/email-verify.png";
 import { ArrowRight } from "lucide-react";
 
-const MailVerify = () => {
+const MailVerifyContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get("email") || "";
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-
-//  useEffect(() => {
-//   const token = searchParams.get("token");
-
-//   if (!token) return;
-
-//   const verify = async () => {
-//     try {
-//       setLoading(true);
-
-//       await API.get(`/auth/verify/${token}`);
-
-//       setMessage("Email verified successfully");
-
-//       setTimeout(() => {
-//         router.push("/authenticate/login");
-//       }, 2000);
-//     } catch (err) {
-//       setMessage("Verification failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   verify();
-// }, [searchParams]);
 
 
   const handleResend = async () => {
@@ -139,4 +113,11 @@ const MailVerify = () => {
   );
 };
 
-export default MailVerify;
+export default function MailVerify() {
+  return(
+    <Suspense
+    fallback={<div>Loading...</div>}>
+    <MailVerifyContent />
+    </Suspense>
+  )
+}

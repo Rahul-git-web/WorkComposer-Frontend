@@ -3,15 +3,30 @@
 import API from "@/api";
 import { Search, ChevronDown, Plus } from 'lucide-react';
 import { TbSelector } from "react-icons/tb";
+import { MessageCircle } from "lucide-react";
 import { IoCheckmark } from "react-icons/io5";
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import logo from "@/assets/dashboard workcomposer logo.png";
 import NewTask from './NewTask';
 import TaskDetails from './TaskDetails';
+import RecentlyDeletedTasks from "./RecentlyDeletedTasks";
+import { useDesktop } from "@/context/DesktopContext";
+import { useProject } from "@/context/ProjectContext";
+import { useContext } from "react";
+import { useTimer } from "@/context/TimerContext";
+import DashboardContext, { useDashboard } from "@/context/DashboardContext";
 
 
-const TaskManagement = () => {
+type TaskManagementProps = {
+    selectedProject?: string;
+    isDesktop?: boolean;
+};
+
+export default function TaskManagement({
+    selectedProject,
+    isDesktop = false,
+}: TaskManagementProps) {
 
     const [search, setSearch] = useState("");
     const [selectedStatus, setSelectedStatus] = useState("All statuses");
@@ -23,15 +38,68 @@ const TaskManagement = () => {
     const [moreOpen, setMoreOpen] = useState(false);
     const [tasks, setTasks] = useState<any[]>([]);
 
-    const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
+    const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
     const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
 
     const [showNewTaskModal, setShowNewTaskModal] = useState(false);
     const [showTaskModal, setShowTaskModal] = useState(false);
 
     const [selectedTask, setSelectedTask] = useState<any>(null);
+    const [showRecentlyDeleted, setShowRecentlyDeleted] = useState(false);
+    const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
-    const [viewMode, setViewMode] = useState("table");
+   const { user } = useDashboard();
+
+    const canManageTasks =
+        user?.permissions?.includes("manage_tasks");
+
+    const {
+        setSelectedProject,
+        setSelectedTask: setTrackingTask,
+    } = useProject();
+
+    const {
+        timer,
+        start,
+        switchTask,
+        isTracking,
+    } = useTimer();
+
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const taskId = searchParams.get("task");
+
+    const currentProject =
+        selectedProject ??
+        searchParams.get("project") ??
+        "Default Project";
+
+const fetchCommentCounts = async (tasksList: any[]) => {
+    try {
+        const results = await Promise.all(
+            tasksList.map(async (task) => {
+                try {
+                    const { data } = await API.get(
+                        `/tasks/${task.id}/comments/unread-count`
+                    );
+
+                    return [task.id, data.count] as const;
+                } catch (error) {
+                    console.error(
+                        `Failed to fetch comment count for task ${task.id}`,
+                        error
+                    );
+
+                    return [task.id, 0] as const;
+                }
+            })
+        );
+
+        setCommentCounts(Object.fromEntries(results));
+    } catch (error) {
+        console.error("FAILED TO FETCH COMMENT COUNTS:", error);
+    }
+};
 
     const fetchTasks = async () => {
         try {
@@ -48,7 +116,10 @@ const TaskManagement = () => {
                 createdAt: task.createdAt,
                 updatedAt: task.updatedAt,
 
-                project: task.project,
+                project: {
+                    _id: task.project?._id,
+                    name: task.project?.name || "Default Project",
+                },
 
                 assignedTo: task.assignedTo,
 
@@ -67,25 +138,73 @@ const TaskManagement = () => {
                     ? [task.assignedTo.email]
                     : [],
 
-                type: "Internal Tasks",
+                type:
+                    task.provider === "jira"
+                        ? "Jira Tasks"
+                        : task.provider === "asana"
+                            ? "Asana Tasks"
+                            : "Internal Tasks",
             }));
 
+            console.error(formattedTasks);
+
             setTasks(formattedTasks);
+            fetchCommentCounts(formattedTasks);
+
+            if (taskId) {
+                const task = formattedTasks.find((t: any) => t.id === taskId);
+
+                if (task) {
+                    setSelectedTask(task);
+                    setShowTaskModal(true);
+
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.delete("task");
+
+                    router.replace(`?${params.toString()}`, {
+                        scroll: false,
+                    });
+                }
+            }
+
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     }
 
     useEffect(() => {
-        fetchTasks();
-    }, [])
+        const loadTasks = async () => {
+            await fetchTasks();
+        };
+
+        loadTasks();
+    }, []);
+
+    useEffect(() => {
+        const handleTasksUpdated = () => {
+            fetchTasks();
+        };
+
+        window.addEventListener("tasksUpdated", handleTasksUpdated);
+
+        return () => {
+            window.removeEventListener("tasksUpdated", handleTasksUpdated);
+        };
+    }, []);
+
 
     const statuses = ["Todo", "In progress", "Done"];
 
     const assignees = [
         "Not assigned",
-        "Arena z",
-        "email@test.com",
+
+        ...Array.from(
+            new Set(
+                tasks.filter((task) =>
+                    task.assignees.length > 0).flatMap((task) =>
+                        task.assignees)
+            )
+        )
     ];
 
     const taskTypes = [
@@ -98,7 +217,7 @@ const TaskManagement = () => {
     // FILTER LOGIC
     const filteredTasks = useMemo(() => {
         return tasks.filter((task) => {
-            const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase()
+            const matchesSearch = task.title?.toLowerCase().includes(search.toLowerCase()
             );
 
             const matchesStatus = selectedStatus === "All statuses"
@@ -107,7 +226,7 @@ const TaskManagement = () => {
 
             const matchesAssignee = selectedAssignees.length === 0
                 ? true
-                : task.assignees.some((assignee) =>
+                : task.assignees.some((assignee: string) =>
                     selectedAssignees.includes(assignee)
                 );
 
@@ -115,15 +234,21 @@ const TaskManagement = () => {
                 ? true
                 : task.type === selectedType;
 
+            const matchesProject =
+
+                task.project?.name === currentProject
+
+
             return (
                 matchesSearch &&
                 matchesStatus &&
                 matchesAssignee &&
-                matchesType
+                matchesType &&
+                matchesProject
             );
         });
     }, [
-        tasks, search, selectedStatus, selectedAssignees, selectedType
+        tasks, search, selectedStatus, selectedAssignees, selectedType, currentProject
     ]);
 
     const toggleAssignee = (assignee: string) => {
@@ -135,27 +260,33 @@ const TaskManagement = () => {
     };
 
 
-    const totalTasks = tasks.length;
+    const totalTasks = filteredTasks.length;
 
-    const todoTasks = tasks.filter(
+    const todoTasks = filteredTasks.filter(
         (task) => task.status === "Todo"
     ).length;
 
-    const inProgressTasks = tasks.filter(
+    const inProgressTasks = filteredTasks.filter(
         (task) => task.status === "In progress"
     ).length;
 
-    const doneTasks = tasks.filter(
+    const doneTasks = filteredTasks.filter(
         (task) => task.status === "Done"
     ).length;
 
-    const overdueTasks = tasks.filter(
-        (task) =>
-            task.dueDate &&
-            new Date(task.dueDate) < new Date() &&
-            task.status !== "Done"
-    ).length;
+    const overdueTasks = filteredTasks.filter((task) => {
+        if (!task.dueDate || task.status === "Done") {
+            return false;
+        }
 
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const due = new Date(task.dueDate);
+        due.setHours(0, 0, 0, 0);
+
+        return due < today;
+    }).length;
 
     return (
         <>
@@ -325,7 +456,16 @@ const TaskManagement = () => {
 
                             {moreOpen && (
                                 <div role='menu' className='absolute right-0 mt-2 w-48 rounded-md border border-gray-200 bg-white shadow-lg z-20'>
-                                    <button className='w-full text-left px-3 py-2 text-sm font-semibold text-gray-700' role='menuitem'> Recently Deleted </button>
+                                    <button
+                                        onClick={() => {
+                                            setMoreOpen(false);
+                                            setShowRecentlyDeleted(true);
+                                        }}
+                                        className='w-full text-left px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100'
+                                        role='menuitem'
+                                    >
+                                        Recently Deleted
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -392,15 +532,16 @@ const TaskManagement = () => {
                     </div>
 
                     <div className='flex items-center justify-between mt-4'>
-                        <h3 className='text-lg font-semibold text-gray-900'>Project: Default Project</h3>
-                        <button
-                            onClick={() =>
-                                setShowNewTaskModal(true)
-                            }
-                            className='inline-flex items-center gap-2 rounded-md border border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 text-sm font-medium'>
-                            <Plus className='w-4 h-4' />
-                            New Task
-                        </button>
+                        <h3 className='text-lg font-semibold text-gray-900'>Project: {currentProject}</h3>
+                        {canManageTasks && (
+                            <button
+                                onClick={() => setShowNewTaskModal(true)}
+                                className="inline-flex items-center gap-2 rounded-md border border-indigo-600 text-indigo-600 hover:bg-indigo-50 px-3 py-1.5 text-sm font-medium"
+                            >
+                                <Plus className="w-4 h-4" />
+                                New Task
+                            </button>
+                        )}
                     </div>
 
                     {/* TASK LIST */}
@@ -415,6 +556,7 @@ const TaskManagement = () => {
                                         <th>Status</th>
                                         <th>Due Date</th>
                                         <th>Assignee</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
 
@@ -448,14 +590,20 @@ const TaskManagement = () => {
 
                                                 <label htmlFor='select-all' className='ml-2 text-sm font-medium text-gray-900'>Select all</label>
 
-                                                {selectedTasks.length > 0 && (
+                                                {canManageTasks && selectedTasks.length > 0 && (
                                                     <button
-                                                        onClick={() => {
-                                                            setTasks((prev) =>
-                                                                prev.filter((task) => !selectedTasks.includes(task.id)
-                                                                )
-                                                            );
-                                                            setSelectedTasks([]);
+                                                        onClick={async () => {
+                                                            try {
+                                                                await API.delete("/tasks/delete-multiple", {
+                                                                    data: {
+                                                                        taskIds: selectedTasks,
+                                                                    },
+                                                                });
+                                                                await fetchTasks();
+                                                                setSelectedTasks([]);
+                                                            } catch (err) {
+                                                                console.error(err);
+                                                            }
                                                         }}
                                                         className='cursor-pointer ml-2 rounded-sm bg-red-50 px-2 py-1 text-sm font-semibold text-red-600 shadow-xs hover:bg-red-100'>Delete Selected</button>
                                                 )}
@@ -467,9 +615,19 @@ const TaskManagement = () => {
 
                                     {filteredTasks.length > 0 ? (
                                         filteredTasks.map((task) => (
-                                            <tr
-                                                key={task.id}
-                                                onClick={() => {
+                                            <tr key={task.id}
+                                                onClick={async () => {
+                                                    try {
+                                                        await API.patch(`/tasks/${task.id}/comments/read`);
+
+                                                        setCommentCounts((prev) => ({
+                                                            ...prev,
+                                                            [task.id]: 0,
+                                                        }));
+                                                    } catch (error) {
+                                                        console.error("FAILED TO MARK COMMENTS AS READ:", error);
+                                                    }
+
                                                     setSelectedTask(task);
                                                     setShowTaskModal(true);
                                                 }}
@@ -480,15 +638,16 @@ const TaskManagement = () => {
                                                     : ""
                                                     }`}>
 
+
                                                 {/* TITLE */}
-                                                <td className='px-3 py-4 whitespace-nowrap'>
-                                                    <div className='flex items-center'>
-                                                        <div className='group grid size-4 grid-cols-1'>
+                                                <td className="px-3 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center">
+
+                                                        {/* CHECKBOX */}
+                                                        <div className="group grid size-4 grid-cols-1">
                                                             <input
-                                                                type='checkbox'
-                                                                onClick={(e) =>
-                                                                    e.stopPropagation()
-                                                                }
+                                                                type="checkbox"
+                                                                onClick={(e) => e.stopPropagation()}
                                                                 checked={selectedTasks.includes(task.id)}
                                                                 onChange={(e) => {
                                                                     if (e.target.checked) {
@@ -498,20 +657,109 @@ const TaskManagement = () => {
                                                                         ]);
                                                                     } else {
                                                                         setSelectedTasks((prev) =>
-                                                                            prev.filter(
-                                                                                (id) => id !== task.id
-                                                                            )
-                                                                        )
+                                                                            prev.filter((id) => id !== task.id)
+                                                                        );
                                                                     }
                                                                 }}
-                                                                className='col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-indigo-600 checked:bg-indigo-600 void-colors:appearance-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'></input>
-                                                            <svg className='pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-gray-950/25' viewBox='0 0 14 14' fill='none'>
-                                                                <path className='opacity-0 group-has-checked:opacity-100' d='M3 8L6 11L11 3.5' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'></path>
-                                                                <path className='opacity-0 group-has-indeterminate:opacity-100' d='M3 7H11' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'></path>
+                                                                className="col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-indigo-600 checked:bg-indigo-600"
+                                                            />
+
+                                                            <svg
+                                                                className="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white"
+                                                                viewBox="0 0 14 14"
+                                                                fill="none"
+                                                            >
+                                                                <path
+                                                                    className="opacity-0 group-has-checked:opacity-100"
+                                                                    d="M3 8L6 11L11 3.5"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                />
                                                             </svg>
                                                         </div>
 
-                                                        <span className='ml-2 text-sm font-medium text-gray-900'>{task.title}</span>
+                                                        {/* TASK TITLE + COMMENT COUNT */}
+                                                        <div className="ml-2 flex items-center gap-2">
+                                                            <span className="text-sm font-medium text-gray-900">
+                                                                {task.title}
+                                                            </span>
+
+                                                            {(commentCounts?.[task.id] ?? 0) > 0 && (
+                                                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                                    <MessageCircle className="h-3.5 w-3.5" />
+                                                                    <span>{commentCounts?.[task.id] ?? 0}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                    </div>
+                                                </td> <td className='px-3 py-4 whitespace-nowrap'>
+                                                    <div className='flex items-center'>
+                                                        <div className='group grid size-4 grid-cols-1'>
+                                                            <input
+                                                                type='checkbox'
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                checked={selectedTasks.includes(task.id)}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedTasks((prev) => [
+                                                                            ...prev,
+                                                                            task.id,
+                                                                        ]);
+                                                                    } else {
+                                                                        setSelectedTasks((prev) =>
+                                                                            prev.filter((id) => id !== task.id)
+                                                                        );
+                                                                    }
+                                                                }}
+                                                                className='col-start-1 row-start-1 appearance-none rounded-sm border border-gray-300 bg-white checked:border-indigo-600 checked:bg-indigo-600 void-colors:appearance-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'
+                                                            />
+
+                                                            <svg
+                                                                className='pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-gray-950/25'
+                                                                viewBox='0 0 14 14'
+                                                                fill='none'
+                                                            >
+                                                                <path
+                                                                    className='opacity-0 group-has-checked:opacity-100'
+                                                                    d='M3 8L6 11L11 3.5'
+                                                                    strokeWidth='2'
+                                                                    strokeLinecap='round'
+                                                                    strokeLinejoin='round'
+                                                                />
+                                                                <path
+                                                                    className='opacity-0 group-has-indeterminate:opacity-100'
+                                                                    d='M3 7H11'
+                                                                    strokeWidth='2'
+                                                                    strokeLinecap='round'
+                                                                    strokeLinejoin='round'
+                                                                />
+                                                            </svg>
+                                                        </div>
+
+                                                        {/* TASK TITLE + COMMENT COUNT */}
+                                                        <div className="ml-2 flex items-center gap-2">
+                                                            <div className="ml-2 flex items-center gap-2">
+                                                                <span className="text-sm font-medium text-gray-900">
+                                                                    {task.title}
+                                                                </span>
+
+                                                                {(commentCounts?.[task.id] ?? 0) > 0 && (
+                                                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                                        <MessageCircle className="h-3.5 w-3.5" />
+                                                                        <span>{commentCounts?.[task.id] ?? 0}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {(commentCounts?.[task.id] ?? 0) > 0 && (
+                                                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                                                    <MessageCircle className="h-3.5 w-3.5" />
+                                                                    <span>{commentCounts?.[task.id] ?? 0}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
 
@@ -554,24 +802,75 @@ const TaskManagement = () => {
                                                             Not assigned
                                                         </div>
                                                     ) : (
-                                                        <div className='flex items-center -space-x-2'>
-                                                            {task.assignees.map((assignee, index) => (
-                                                                <div
-                                                                    key={index}
-                                                                    className='flex items-center'
-                                                                >
-                                                                    <Image
-                                                                        className='h-7 w-7 rounded-full border-2 border-white'
-                                                                        src={logo}
-                                                                        alt='Avatar'
-                                                                    />
-                                                                    <span className='ml-2 mr-3 text-sm text-gray-700'
-                                                                    >
-                                                                        {assignee}
+                                                        <div className="flex items-center">
+                                                            {task.assignedTo ? (
+                                                                <>
+                                                                    {task.assignedTo.avatar?.trim() ? (
+                                                                        <Image
+                                                                            src={task.assignedTo.avatar}
+                                                                            alt={`${task.assignedTo.firstName} ${task.assignedTo.lastName}`}
+                                                                            width={28}
+                                                                            height={28}
+                                                                            unoptimized
+                                                                            className="h-7 w-7 rounded-full border-2 border-white object-cover"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="h-7 w-7 rounded-full border-2 border-white bg-indigo-500 flex items-center justify-center text-white text-xs font-semibold">
+                                                                            {task.assignedTo.firstName?.charAt(0).toUpperCase()}
+                                                                        </div>
+                                                                    )}
+
+                                                                    <span className="ml-2 mr-3 text-sm text-gray-700">
+                                                                        {task.assignedTo.firstName} {task.assignedTo.lastName}
                                                                     </span>
-                                                                </div>
-                                                            ))}
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-sm text-gray-400 italic">
+                                                                    Unassigned
+                                                                </span>
+                                                            )}
                                                         </div>
+                                                    )}
+                                                </td>
+
+                                                <td className="px-3 py-4 whitespace-nowrap text-right">
+                                                    {isDesktop && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+
+                                                                if (!user?._id) return;
+
+                                                                // User clicked Done on the active task
+                                                                if (timer?.task?._id === task.id) {
+                                                                    setSelectedProject(null);
+                                                                    setTrackingTask(null);
+
+                                                                    switchTask(null, null);
+
+                                                                    return;
+                                                                }
+
+                                                                // User clicked Start on a task                                 
+                                                                setSelectedProject(task.project._id);
+                                                                setTrackingTask(task.id);
+
+                                                                if (!isTracking) {
+                                                                    start(
+                                                                        user._id,
+                                                                        task.project._id,
+                                                                        task.id
+                                                                    );
+                                                                } else {
+                                                                    switchTask(
+                                                                        task.project._id,
+                                                                        task.id
+                                                                    );
+                                                                }
+                                                            }}
+                                                        >
+                                                            {timer?.task?._id === task.id ? "Done" : "Start"}
+                                                        </button>
                                                     )}
                                                 </td>
                                             </tr>
@@ -600,14 +899,19 @@ const TaskManagement = () => {
 
             {showTaskModal && (
                 <TaskDetails
-
                     setShowTaskModal={setShowTaskModal}
                     selectedTask={selectedTask}
                     fetchTasks={fetchTasks}
+                    readOnly={!!taskId}
+                />
+            )}
+
+            {showRecentlyDeleted && (
+                <RecentlyDeletedTasks
+                    onClose={() => setShowRecentlyDeleted(false)}
                 />
             )}
         </>
     )
 }
 
-export default TaskManagement

@@ -6,7 +6,7 @@
     // "outDir": "./dist",
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
+    "module": "esnext",
     "target": "esnext",
     "types": [],
     // For nodejs:
@@ -47,6 +47,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
   "paths": {
     "@/*": ["./src/*"]
   },
@@ -63,7 +64,7 @@
     "**/*.mts",
     "**/*.ts",
     "**/*.tsx"
-, "src/app/dashboard/sidebar.tsx"  ],
+, "src/app/dashboard/sidebar.tsx", "src/app/dashboard/layout.js", "src/utils/mapUserToProfileData.ts"  ],
   "exclude": [
     "node_modules"
   ]

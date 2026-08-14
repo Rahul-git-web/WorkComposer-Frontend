@@ -5,11 +5,11 @@ import API from "@/api";
 import Image from "next/image";
 import logo from "@/assets/logo.W.png";
 import { GoLock } from "react-icons/go";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { HiOutlineCheckCircle } from "react-icons/hi2";
 import { BsArrowRight } from "react-icons/bs";
 
-const ResetPassword = () => {
+const ResetPasswordContent = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -161,4 +161,10 @@ const ResetPassword = () => {
   );
 };
 
-export default ResetPassword;
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordContent />
+    </Suspense>
+  );
+}

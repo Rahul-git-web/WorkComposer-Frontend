@@ -32,7 +32,7 @@ const EditTeamModal = ({
 
             setShowEditModal(false);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
 

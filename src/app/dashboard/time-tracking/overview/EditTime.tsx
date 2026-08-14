@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import API from "@/api";
+import useEffectiveTrackingSettings from "@/hooks/useEffectiveTrackingSettings";
+import toast from "react-hot-toast";
 import { Clock3, ChevronDown } from "lucide-react";
 import { IoCalendarClearOutline } from "react-icons/io5";
 import { HiBriefcase } from "react-icons/hi2";
 import { IoIosPause } from "react-icons/io";
 import { PiInfo } from "react-icons/pi";
 import { HiCheck } from "react-icons/hi2";
+import { useAppTimezone } from "@/hooks/useAppTimezone";
+import { createDateTimeInTimezone } from "@/utils/appTimezone";
 
 type Props = {
   onClose: () => void;
@@ -15,55 +19,160 @@ type Props = {
 };
 
 const EditTime = ({ onClose, onSave }: Props) => {
+  const timezone = useAppTimezone();
+
   const [mode, setMode] = useState<"work" | "break">("work");
   const [start, setStart] = useState<Date>(new Date());
   const [end, setEnd] = useState<Date>(
     new Date(new Date().getTime() + 60 * 60 * 1000),
   );
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState("");
+  const [reason, setReason] = useState("");
+  const [projects, setProjects] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+
+  const [selectedProject, setSelectedProject] = useState("");
+  const [selectedTask, setSelectedTask] = useState("");
+
+  const { settings: effectiveSettings } =
+    useEffectiveTrackingSettings();
+
+  const backdatingLimit =
+    effectiveSettings?.manualTime?.backdatingLimit ?? 365;
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const { data } = await API.get("/projects");
+
+        setProjects(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProject) {
+      setTasks([]);
+      setSelectedTask("");
+      return;
+    }
+
+    const fetchTasks = async () => {
+      try {
+        const { data } = await API.get(
+          `/tasks?project=${selectedProject}`
+        );
+
+        setTasks(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchTasks();
+  }, [selectedProject]);
 
   const duration: number = Math.max(
     0,
     Math.floor((end.getTime() - start.getTime()) / 1000),
   );
 
+  // NOTE: `start`/`end` here hold the y/m/d/h/m the user picked from the
+  // dropdowns, stored as local-browser Date objects purely so the native
+  // getters (getFullYear/getMonth/...) are convenient to read back into the
+  // <select> values. Before we ever send them anywhere, we re-interpret
+  // those same y/m/d/h/m values as wall-clock time *in the app's report
+  // timezone*, not the browser's timezone. That's what fixes the bug.
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (loading) return;
 
-    if (end <= start) {
-      alert("End time must be greater than start time");
+    const actualStart = createDateTimeInTimezone(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate(),
+      start.getHours(),
+      start.getMinutes(),
+      timezone
+    );
+
+    const actualEnd = createDateTimeInTimezone(
+      end.getFullYear(),
+      end.getMonth(),
+      end.getDate(),
+      end.getHours(),
+      end.getMinutes(),
+      timezone
+    );
+
+    if (actualEnd <= actualStart) {
+      if (!reason.trim()) {
+        toast.error("Please provide a reason.");
+        return;
+      }
+
+      toast.error("End time must be greater than start time.");
       return;
     }
 
     setLoading(true);
 
     try {
-       type SessionPayload = {
-  startTime: Date;
-  endTime: Date;
-  duration: number;
-  date: string;
-  team: string;
-  type: "work" | "break";
-};
+      type SessionPayload = {
+        startTime: Date;
+        endTime: Date;
+        duration: number;
+        date: string;
+        team: string;
+        type: "work" | "break";
+      };
+
+      const actualDuration = Math.max(
+        0,
+        Math.floor((actualEnd.getTime() - actualStart.getTime()) / 1000)
+      );
 
       const payload: SessionPayload = {
-        startTime: start,
-        endTime: end,
-        duration,
-        date: new Date(start).toISOString().split("T")[0]!,
+        startTime: actualStart,
+        endTime: actualEnd,
+        duration: actualDuration,
+        date: actualStart.toISOString().split("T")[0]!,
         team: "Default team",
         type: mode,
       }
-    await API.post("/sessions/create", payload);
-   
 
+      if (
+        effectiveSettings?.manualTime?.requireProjectTask &&
+        !selectedProject
+      ) {
+        toast.error("Please select a project.");
+
+        return;
+      }
+
+      const { data } = await API.post("/manual-time-requests", {
+        ...payload,
+        project: selectedProject || null,
+        task: selectedTask || null,
+        reason,
+      });
+
+      toast.success(data.message);
       onSave();
       onClose();
-    } catch (err) {
-      console.log("Error saving session", err);
+    } catch (err: any) {
+      console.error(err);
+
+      toast.error(
+        err?.response?.data?.message ||
+        "Unable to save session."
+      );
     } finally {
       setLoading(false);
     }
@@ -91,6 +200,22 @@ const EditTime = ({ onClose, onSave }: Props) => {
     if (type === "hour") newDate.setHours(value);
     if (type === "minute") newDate.setMinutes(value);
 
+    const earliestDate = new Date();
+
+    earliestDate.setHours(0, 0, 0, 0);
+
+    earliestDate.setDate(
+      earliestDate.getDate() - backdatingLimit
+    );
+
+    if (newDate < earliestDate) {
+      toast.error(
+        `You can only add manual time up to ${backdatingLimit} day(s) in the past.`
+      );
+
+      return;
+    }
+
     if (isStart) {
       setStart(newDate);
 
@@ -114,12 +239,14 @@ const EditTime = ({ onClose, onSave }: Props) => {
         className="fixed inset-0 z-40 backdrop-blur-md bg-black/20"
       />
 
-      <div className="fixed inset-0 z-50 w-screen overflow-y-auto">
+      <div
+        className="fixed inset-0 z-50 w-screen overflow-y-auto"
+        onClick={onClose}
+      >
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
           <div
-            id="headlessui-dialog-panel-v-0-15"
-            data-headlessui-state="open"
-            className="relative transform rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl"
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full transform rounded-lg bg-white px-4 pt-5 pb-4 text-left shadow-xl transition-all sm:my-8 sm:max-w-4xl"
           >
             <div className="mt-3 text-center sm:mt-5">
               <h3
@@ -142,7 +269,7 @@ const EditTime = ({ onClose, onSave }: Props) => {
                   Time Entry
                 </h3>
                 <div className="mb-5">
-                  <div className="flex justify-end mb-4">
+                  <div className="mb-4 flex justify-center sm:justify-end">
                     <div className="inline-flex rounded-md shadow-sm">
                       {/* WORK */}
                       <button
@@ -173,7 +300,7 @@ const EditTime = ({ onClose, onSave }: Props) => {
                   </div>
 
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mb-4">
-                    <div className="flex items-center justify-between mb-3">
+                    <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center">
                         <IoCalendarClearOutline className="w-5 h-5 text-indigo-500 mr-2" />
                         <span className="text-sm font-medium text-gray-700">
@@ -197,7 +324,7 @@ const EditTime = ({ onClose, onSave }: Props) => {
                         </div>
 
                         <div className="space-y-2">
-                          <div className="flex gap-2 items-end w-full">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full items-end">
                             <div className="w-full">
                               <label className="block text-sm font-medium text-gray-900">
                                 Year
@@ -321,7 +448,7 @@ const EditTime = ({ onClose, onSave }: Props) => {
                             </div>
                           </div>
 
-                          <div className="flex gap-2 items-end w-full">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full items-end">
                             <div className="w-full">
                               <label className="block text-sm font-medium text-gray-900">
                                 Hour
@@ -462,7 +589,7 @@ const EditTime = ({ onClose, onSave }: Props) => {
                         </div>
 
                         <div className="space-y-2">
-                          <div className="flex gap-2 items-end w-full">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full items-end">
                             <div className="w-full">
                               <label className="block text-sm font-medium text-gray-900">
                                 Year
@@ -586,7 +713,7 @@ const EditTime = ({ onClose, onSave }: Props) => {
                             </div>
                           </div>
 
-                          <div className="flex gap-2 items-end w-full">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full items-end">
                             <div className="w-full">
                               <label className="block text-sm font-medium text-gray-900">
                                 Hour
@@ -723,6 +850,74 @@ const EditTime = ({ onClose, onSave }: Props) => {
                   </div>
                 </div>
 
+                {effectiveSettings?.manualTime?.requireProjectTask && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Project
+                      </label>
+
+                      <select
+                        value={selectedProject}
+                        onChange={(e) => setSelectedProject(e.target.value)}
+                        className="w-full rounded-lg border px-3 py-2"
+                      >
+                        <option value="">Select Project</option>
+
+                        {projects.map((project) => (
+                          <option
+                            key={project._id}
+                            value={project._id}
+                          >
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Task
+                      </label>
+
+                      <select
+                        value={selectedTask}
+                        onChange={(e) => setSelectedTask(e.target.value)}
+                        disabled={!selectedProject}
+                        className="w-full rounded-lg border px-3 py-2 disabled:opacity-50"
+                      >
+                        <option value="">Select Task</option>
+
+                        {tasks.map((task) => (
+                          <option
+                            key={task._id}
+                            value={task._id}
+                          >
+                            {task.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <div className="mb-5">
+                  <label className="block text-sm font-medium text-gray-900 mb-2">
+                    Reason for Manual Time
+                  </label>
+
+
+
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={4}
+                    required
+                    placeholder="Explain why you're requesting manual work or break time..."
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                  />
+                </div>
+
                 <div>
                   <div className="text-sm text-gray-600 bg-gray-50 p-4 border border-gray-200 flex items-start">
                     <PiInfo className="w-5 h-5 text-indigo-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -734,14 +929,20 @@ const EditTime = ({ onClose, onSave }: Props) => {
                 </div>
               </div>
 
-              <div className="text-center">
+
+              {error && (
+                <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3 text-red-600 text-sm">
+                  {error}
+                </div>
+              )}
+              <div className="flex justify-center sm:justify-center">
                 <button className="inline-flex justify-center items-center rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   {loading ? (
                     "Saving..."
                   ) : (
                     <>
                       <HiCheck className="h-5 w-5 mr-1.5" />
-                      Submit
+                      Submit Request
                     </>
                   )}
                 </button>

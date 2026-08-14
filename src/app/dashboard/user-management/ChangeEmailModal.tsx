@@ -37,27 +37,16 @@ const ChangeEmailModal = ({
 
                 return;
             }
-            console.log("BUTTON CLICKED");
+          
 
             const res = await API.put(`/users/${user._id || user.id}/email-request`, {
                 newEmail: email,
             }
             );
 
-            console.log(res.data);
-
             alert("verification email sent successfully")
 
             setShowChangeEmailModal(false);
-
-            // setUsers((prev: any) =>
-            //     prev.map((u: any) =>
-            //         (u._id || u.id) === (user._id || user.id) ? {
-            //             ...u,
-            //             email,
-            //         } : u
-            //     )
-            // );
 
             setSuccessMessage(res.data.message || "Verification email sent successfully");
 
@@ -65,7 +54,7 @@ const ChangeEmailModal = ({
                 setShowChangeEmailModal(false);
             }, 1200);
         } catch (err: any) {
-            console.log(err);
+            console.error(err);
             setErrorMessage(err?.response?.data?.message || "Failed to update email");
         } finally {
             setLoading(false);

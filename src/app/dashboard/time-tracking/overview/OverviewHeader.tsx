@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
 
 import { HiUsers } from "react-icons/hi2";
 import { MdKeyboardArrowDown } from "react-icons/md";
@@ -10,8 +10,33 @@ import DateControls from "./DateControls";
 type Props = {
   date: Date;
   setDate: React.Dispatch<React.SetStateAction<Date>>;
-  selectedTeams: string[];
-  setSelectedTeams: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedTeams: any[];
+  setSelectedTeams: React.Dispatch<React.SetStateAction<any[]>>;
+  teams: any[];
+  selectedUsers: any[];
+  setSelectedUsers: React.Dispatch<React.SetStateAction<any[]>>;
+  users: any[];
+
+  sortBy: string;
+  setSortBy: React.Dispatch<React.SetStateAction<string>>;
+  order: string;
+  setOrder: React.Dispatch<React.SetStateAction<string>>;
+
+  reportRange: {
+    type: string;
+    startDate: Date;
+    endDate: Date;
+  };
+
+  setReportRange: Dispatch<SetStateAction<{
+    type: string;
+    startDate: Date;
+    endDate: Date;
+  }>
+  >;
+
+  onRefresh: () => Promise<void>;
+  isRefreshing: boolean;
 };
 
 export default function OverviewHeader({
@@ -19,10 +44,24 @@ export default function OverviewHeader({
   setDate,
   selectedTeams,
   setSelectedTeams,
+  selectedUsers,
+  setSelectedUsers,
+  teams,
+  users,
+  sortBy,
+  setSortBy,
+  order,
+  setOrder,
+  reportRange,
+  setReportRange,
+  onRefresh,
+  isRefreshing,
 }: Props) {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [open, setOpen] = useState<boolean>(false);
+
   const ref = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -45,32 +84,43 @@ export default function OverviewHeader({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (
+        ref.current &&
+        !ref.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     };
 
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+
+    return () =>
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
   }, []);
 
   return (
     <div className="w-full">
       {/* Top Info */}
-      <div className="mb-1 flex justify-end mt-7">
-        <div className="text-xs text-gray-500">
-          <span>Report generated: {formatDateTime(currentTime)}</span>
-          <span className="ml-2">•</span>
-          <span className="ml-2">
+      <div className="mt-5 sm:mt-7 mb-2 flex flex-col items-start gap-1 text-[11px] sm:text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-end sm:gap-2 px-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="whitespace-nowrap">Report generated: {formatDateTime(currentTime)}</span>
+          <span className="hidden sm:inline">•</span>
+          <span className="whitespace-nowrap">
             Timezone: Asia/Calcutta (UTC+05:30)
           </span>
         </div>
       </div>
 
       {/* Header */}
-      <div className="relative flex flex-wrap items-center justify-between gap-4 bg-gray-50 px-4 py-3 border border-r border-t border-gray-200 sm:px-6 lg:px-8 rounded-t-md">
+      <div className="relative flex flex-col gap-3 sm:gap-4 border border-gray-200 rounded-t-md bg-gray-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         {/* Left Section */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex w-full items-center gap-2 sm:gap-3 sm:w-auto">
           <div className="relative flex items-center" ref={ref}>
             {/* Main Button */}
             <button
@@ -78,7 +128,7 @@ export default function OverviewHeader({
                 e.stopPropagation();
                 setOpen(!open);
               }}
-              className="flex items-center gap-2.5 px-3.5 py-2 border border-gray-300 rounded-lg text-sm hover:bg-white hover:border-gray-400 transition-colors bg-white"
+              className="flex w-full sm:w-auto items-center gap-2 sm:gap-2.5 px-3 sm:px-3.5 py-2 border border-gray-300 rounded-lg bg-white text-sm transition-colors hover:bg-white hover:border-gray-400 min-w-0"
             >
               {selectedTeams.length > 0 ? (
                 <HiOfficeBuilding className="w-4 h-4 text-gray-600" />
@@ -86,21 +136,21 @@ export default function OverviewHeader({
                 <HiUsers className="w-4 h-4 text-gray-600" />
               )}
 
-              <div className="flex items-center gap-2 max-w-[250px]">
+              <div className="flex min-w-0 flex-1 items-center gap-2 max-w-full sm:max-w-[250px]">
                 {selectedTeams.length > 0 ? (
                   <>
-                    <span className="font-medium text-gray-900">
-                      {selectedTeams[0]}
+                    <span className="font-medium text-gray-900 truncate">
+                      {selectedTeams[0]?.name}
                     </span>
 
-                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-400 flex-shrink-0">•</span>
 
-                    <span className="text-gray-500 text-sm">
+                    <span className="text-gray-500 text-sm whitespace-nowrap flex-shrink-0">
                       {selectedTeams.length} selected
                     </span>
                   </>
                 ) : (
-                  <span className="text-gray-900">
+                  <span className="truncate text-gray-900">
                     All Users & Teams
                   </span>
                 )}
@@ -112,6 +162,7 @@ export default function OverviewHeader({
             {/* Clear Button */}
             {selectedTeams.length > 0 && (
               <button
+                title="Clear"
                 onClick={() => setSelectedTeams([])}
                 className="text-sm text-gray-500 hover:text-gray-700 ml-3"
               >
@@ -122,13 +173,21 @@ export default function OverviewHeader({
             {/* Popover */}
             {open && (
               <div
-                className="absolute top-full left-0 mt-2"
+                className="absolute top-full left-0 right-0 sm:right-auto mt-2 z-50 w-[95vw] max-w-sm sm:w-auto sm:max-w-none"
                 onClick={(e) => e.stopPropagation()}
               >
                 <FilterPopover
                   selectedTeams={selectedTeams}
                   setSelectedTeams={setSelectedTeams}
+                  selectedUsers={selectedUsers}
+                  setSelectedUsers={setSelectedUsers}
                   setOpen={setOpen}
+                  teams={teams}
+                  users={users}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                  order={order}
+                  setOrder={setOrder}
                 />
               </div>
             )}
@@ -136,7 +195,13 @@ export default function OverviewHeader({
         </div>
 
         {/* Right Section */}
-        <DateControls date={date} setDate={setDate} />
+        <DateControls
+          date={date}
+          setDate={setDate}
+          setReportRange={setReportRange}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+        />
       </div>
     </div>
   );

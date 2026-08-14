@@ -3,10 +3,11 @@
 import Papa from "papaparse";
 import React, { useCallback, useEffect, useState } from 'react'
 import API from "@/api";
+import toast from "react-hot-toast";
 import { useSearchParams } from 'next/navigation';
 import { Search, Check, ChevronDown, Download, Upload, Mail, SendHorizontal, Archive, CircleCheck, SearchAlert } from 'lucide-react';
 import { TbSelector } from "react-icons/tb";
-import { HiOutlineUsers } from "react-icons/hi2";
+import UserProfileTrigger from "@/components/UserProfileTrigger";
 import { HiUserAdd } from "react-icons/hi";
 import { HiArrowUturnUp } from "react-icons/hi2";
 import { HiMiniUsers } from "react-icons/hi2";
@@ -22,8 +23,16 @@ import EditUserModal from './EditUserModal';
 import ArchiveUserModal from './ArchiveUserModal';
 import DeviceModal from './DeviceModal';
 import UserManager from './UserManager';
+import UserProfileModal from "@/components/UserProfilemodal";
 
-export default function TeamsManagement() {
+type TeamsManagementProps = {
+    selectedTeam?: string;
+};
+
+export default function TeamsManagement({
+    selectedTeam,
+}: TeamsManagementProps) {
+
     const [openDropDown, setOpenDropDown] = useState<{
         type: string;
         id: string;
@@ -38,6 +47,7 @@ export default function TeamsManagement() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showArchiveModal, setShowArchiveModal] = useState(false);
     const [showDeviceModal, setShowDeviceModal] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedRole, setSelectedRole] = useState("All Roles");
@@ -51,7 +61,10 @@ export default function TeamsManagement() {
 
     const searchParams = useSearchParams();
 
-    const selectedTeam = searchParams.get("team") || "All Teams";
+    const currentTeam =
+        selectedTeam ??
+        searchParams.get("team") ??
+        "All Teams";
 
 
     const managers = Array.isArray(users)
@@ -92,7 +105,7 @@ export default function TeamsManagement() {
                         limit: 5,
                         search: searchTerm,
                         role: selectedRole,
-                        team: selectedTeam !== "All Teams" ? selectedTeam : undefined,
+                        team: currentTeam !== "All Teams" ? currentTeam : undefined,
                     },
                 }
             );
@@ -112,12 +125,7 @@ export default function TeamsManagement() {
             );
 
         } catch (err) {
-
-            console.log(
-                "Error fetching users",
-                err
-            );
-
+            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -127,7 +135,7 @@ export default function TeamsManagement() {
         currentPage,
         searchTerm,
         selectedRole,
-        selectedTeam
+        currentTeam
     ]);
 
     useEffect(() => {
@@ -138,10 +146,9 @@ export default function TeamsManagement() {
         try {
             await API.post("/users/resend-invite", { id });
 
-            alert("Invite resent successfully");
+            toast.success("Invite resent successfully");
         } catch (err: any) {
-            console.log(err);
-            alert(err?.response?.data?.message || "Failed to resend invite")
+            toast.error(err?.response?.data?.message || "Failed to resend invite")
         }
     }
 
@@ -159,7 +166,7 @@ export default function TeamsManagement() {
             setOpenDropDown(null);
 
         } catch (err) {
-            console.log(err)
+            console.error(err)
         }
     }
 
@@ -168,7 +175,7 @@ export default function TeamsManagement() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, selectedRole, selectedTeam]);
+    }, [searchTerm, selectedRole, currentTeam]);
 
     const handleUpdateRole = async (
         id: string,
@@ -208,7 +215,7 @@ export default function TeamsManagement() {
 
         } catch (err) {
 
-            console.log(err);
+            console.error(err);
         }
     };
 
@@ -217,7 +224,7 @@ export default function TeamsManagement() {
         try {
 
             if (!selectedManager) {
-                alert("Select manager");
+                toast.error("Select manager");
                 return;
             }
 
@@ -242,12 +249,12 @@ export default function TeamsManagement() {
             setEditingManagerId(null);
             setSelectedManager("");
 
-            alert("Manager assigned");
+            toast.success("Manager assigned");
 
         } catch (err) {
 
-            console.log(err);
-            alert("Failed to assign manager");
+            console.error(err);
+            toast.error("Failed to assign manager");
         }
     };
 
@@ -269,13 +276,13 @@ export default function TeamsManagement() {
                 )
             );
 
-            alert("User unarchived successfully");
+            toast.success("User unarchived successfully");
 
         } catch (err: any) {
 
-            console.log(err);
+            console.error(err);
 
-            alert(
+            toast.error(
                 err?.response?.data?.message ||
                 "Failed to unarchive user"
             );
@@ -312,10 +319,7 @@ export default function TeamsManagement() {
             link.remove();
 
         } catch (err) {
-
-            console.log(err);
-
-            alert("Export failed");
+            toast.error("Export failed");
         }
     };
 
@@ -353,23 +357,26 @@ export default function TeamsManagement() {
                             users: formattedUsers,
                         }
                     );
-                    alert(
+                    toast.success(
                         "Users imported successfully"
                     );
 
                     fetchUsers();
 
                 } catch (err) {
-
-                    console.log(err);
-
-                    alert("Import failed");
+                    toast.error("Import failed");
                 }
             },
         });
     };
 
-
+    const latestDevice = selectedUser?.devices?.length
+        ? [...selectedUser.devices].sort(
+            (a: any, b: any) =>
+                new Date(b.lastSync).getTime() -
+                new Date(a.lastSync).getTime()
+        )[0]
+        : null;
 
     return (
         <>
@@ -527,7 +534,7 @@ export default function TeamsManagement() {
                                                                     link.remove();
 
                                                                 } catch (err) {
-                                                                    console.log(err);
+                                                                    console.error(err);
                                                                 }
                                                             }}
                                                             className='text-gray-700 block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100' role='menuitem'>Users</button>
@@ -563,9 +570,7 @@ export default function TeamsManagement() {
 
                                                                 } catch (err) {
 
-                                                                    console.log(err);
-
-                                                                    alert("Failed to export hierarchy users");
+                                                                    toast.error("Failed to export hierarchy users");
                                                                 }
                                                             }}
                                                             className='text-gray-700 block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100'
@@ -605,9 +610,9 @@ export default function TeamsManagement() {
 
                                                                 } catch (err) {
 
-                                                                    console.log(err);
 
-                                                                    alert("Failed to export managers hierarchy");
+
+                                                                    toast.error("Failed to export managers hierarchy");
                                                                 }
                                                             }}
                                                             className='text-gray-700 block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100'
@@ -647,9 +652,9 @@ export default function TeamsManagement() {
 
                                                                 } catch (err) {
 
-                                                                    console.log(err);
 
-                                                                    alert("Failed to export devices");
+
+                                                                    toast.error("Failed to export devices");
                                                                 }
                                                             }}
                                                             className='text-gray-700 block px-4 py-2 text-sm cursor-pointer hover:bg-gray-100'
@@ -716,19 +721,53 @@ export default function TeamsManagement() {
                                                             {/* USER */}
                                                             <td className='py-5 pl-6 max-w-xs'>
                                                                 <div className='flex items-center min-w-0'>
-                                                                    <div className='h-10 w-10 flex-shrink-0 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold uppercase'>
-                                                                        {user?.email?.charAt(0)}
-                                                                    </div>
+
+                                                                    <UserProfileTrigger user={user} className="shrink-0 cursor-pointer">
+                                                                        {user?.avatar ? (
+                                                                            <img
+                                                                                src={user.avatar}
+                                                                                alt={`${user.firstName} ${user.lastName}`}
+                                                                                className="h-10 w-10 flex-shrink-0 rounded-full object-cover hover:ring-2 hover:ring-indigo-400 transition"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="h-10 w-10 flex-shrink-0 rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold uppercase hover:ring-2 hover:ring-indigo-400 transition">
+                                                                                {user?.email?.charAt(0)}
+                                                                            </div>
+                                                                        )}
+                                                                    </UserProfileTrigger>
 
                                                                     <div className='ml-4 min-w-0'>
-                                                                        <div className='text-sm font-medium text-gray-900 truncate'>
+                                                                        <UserProfileTrigger
+                                                                            user={user}
+                                                                            className="text-sm font-medium text-gray-900 truncate hover:text-indigo-600 cursor-pointer text-left"
+                                                                        >
                                                                             {user.firstName ? `${user.firstName} ${user.lastName}` : "Pending User"}
-                                                                        </div>
+                                                                        </UserProfileTrigger>
 
                                                                         <div className='text-sm text-gray-500 truncate'>
                                                                             {user.email}
                                                                         </div>
                                                                     </div>
+
+                                                                    <div className='ml-4 min-w-0'>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                setSelectedUser(user);
+                                                                                setShowProfileModal(true);
+                                                                            }}
+                                                                            className='text-sm font-medium text-gray-900 truncate hover:text-indigo-600 cursor-pointer text-left'
+                                                                        >
+                                                                            {user.firstName
+                                                                                ? `${user.firstName} ${user.lastName}`
+                                                                                : "Pending User"}
+                                                                        </button>
+
+                                                                        <div className='text-sm text-gray-500 truncate'>
+                                                                            {user.email}
+                                                                        </div>
+                                                                    </div>
+
                                                                 </div>
                                                             </td>
 
@@ -855,17 +894,19 @@ export default function TeamsManagement() {
                                                                             )}
 
 
-                                                                        {user.role?.toLowerCase() === "manager" && (
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    setSelectedUser(user);
-                                                                                    setEditingManagerId(userId);
-                                                                                }}
-                                                                                className='text-sm font-medium text-indigo-600 hover:text-indigo-800'
-                                                                            >
-                                                                                Edit
-                                                                            </button>
-                                                                        )}
+                                                                        {user.role?.toLowerCase() === "manager" &&
+                                                                            (currentUser?.role?.toLowerCase() === "owner" ||
+                                                                                currentUser?.role?.toLowerCase() === "admin") && (
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setSelectedUser(user);
+                                                                                        setEditingManagerId(userId);
+                                                                                    }}
+                                                                                    className="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                                                                                >
+                                                                                    Edit
+                                                                                </button>
+                                                                            )}
                                                                     </div>
 
                                                                     {/* MANAGER STATS */}
@@ -1007,7 +1048,6 @@ export default function TeamsManagement() {
 
 
                                                                                             <button onClick={() => {
-                                                                                                console.log("DELETE ID:", userId);
                                                                                                 handleDeleteUser(userId)
                                                                                             }}
                                                                                                 className='flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-red-600 cursor-pointer'>
@@ -1098,6 +1138,7 @@ export default function TeamsManagement() {
                 <AddUsers
                     setShowAddModal={setShowAddModal}
                     setUsers={setUsers}
+                    onUserAdded={fetchUsers}
                 />
             )}
 
@@ -1127,6 +1168,7 @@ export default function TeamsManagement() {
                     setShowDeviceModal={setShowDeviceModal}
                 />
             )}
+
 
             {editingManagerId && (
                 <UserManager

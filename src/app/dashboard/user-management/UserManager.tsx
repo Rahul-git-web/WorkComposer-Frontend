@@ -53,7 +53,6 @@ const UserManager = ({
       setUsers(Array.isArray(res.data.users) ? res.data.users : []);
 
     } catch (err) {
-      console.log(err);
       toast.error("Failed to fetch users");
     } finally {
       setLoading(false);
@@ -66,32 +65,29 @@ const UserManager = ({
 
       setTeams(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   }, [])
+
+
+  const fetchManagerAssignments = useCallback(async () => {
+    try {
+      const { data } = await API.get(
+        `/users/${userId}/manager-assignments`
+      );
+
+      setSelectedUsers(data.userIds || []);
+      setSelectedTeams(data.teams || []);
+    } catch (err) {
+      toast.error("Failed to load manager assignments");
+    }
+  }, [userId]);
 
   useEffect(() => {
     fetchUsers();
     fetchTeams();
-  }, [fetchUsers, fetchTeams]);
-
-  useEffect(() => {
-    {
-      const alreadyAssignedUsers = users
-        .filter((user: any) => {
-          const managerId =
-            typeof user.manager === "object"
-              ? user.manager?._id
-              : user.manager;
-
-          return managerId === userId;
-        })
-        .map((user) => user._id);
-
-      setSelectedUsers(alreadyAssignedUsers);
-
-    }
-  }, [users, userId]);
+    fetchManagerAssignments();
+  }, [fetchUsers, fetchTeams, fetchManagerAssignments]);
 
   // FILTER USERS 
 
@@ -187,7 +183,6 @@ const UserManager = ({
       handleCloseModal();
 
     } catch (err) {
-      console.log(err);
       toast.error("Failed to assign users");
     } finally {
       setSaving(false);
@@ -245,9 +240,23 @@ const UserManager = ({
     fetchUsers();
   };
 
+
   const getAvatar = (avatar?: string) => {
-    return avatar?.trim() ? avatar : "https://via.placeholder.com/40"
-  }
+    return avatar?.trim() ? avatar : "";
+  };
+
+  const getInitials = (user: User) => {
+    if (user.name?.trim()) {
+      return user.name
+        .trim()
+        .split(" ")
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase())
+        .join("");
+    }
+
+    return user.email[0]?.toUpperCase() || "?";
+  };
 
 
   const manager = users.find((u) =>
@@ -426,11 +435,19 @@ const UserManager = ({
                                   className="h-3.5 w-3.5 rounded border-gray-300"
                                 ></input>
 
-                                <Image src={getAvatar(user.avatar)} alt={user.name || user.email}
-                                  width={44}
-                                  height={44}
-                                  className="rounded-full object-cover"
-                                />
+                                {getAvatar(user.avatar) ? (
+                                  <img
+                                    src={getAvatar(user.avatar)}
+                                    alt={user.name || user.email}
+                                    width={44}
+                                    height={44}
+                                    className="h-11 w-11 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="h-11 w-11 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold text-sm">
+                                    {getInitials(user)}
+                                  </div>
+                                )}
 
                                 <div>
                                   <p className="text-sm font-semibold text-gray-900 leading-none">{user.name || user.email}</p>

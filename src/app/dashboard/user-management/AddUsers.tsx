@@ -2,23 +2,43 @@
 
 import { useState, useEffect } from 'react';
 import API from "@/api";
-import { AxiosError } from 'axios';
+import { AxiosError } from "axios";
+import toast from "react-hot-toast";
 import { X, Check, Plus, Eye, EyeOff } from 'lucide-react';
 import { TbSelector } from "react-icons/tb";
 import { HiMiniDocumentDuplicate } from "react-icons/hi2";
 import BulkInvites from './BulkInvites';
 import { HiMiniMinusCircle } from "react-icons/hi2";
 
-const AddUsers = ({ setShowAddModal, setUsers }: any) => {
+type userData = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  role: string;
+  team: string;
+}
+
+type AddUsersProps = {
+  setShowAddModal: React.Dispatch<React.SetStateAction<boolean>>;
+  setUsers: React.Dispatch<React.SetStateAction<any[]>>;
+  onUserAdded: () => Promise<void>;
+};
+
+const AddUsers = ({
+  setShowAddModal,
+  setUsers,
+  onUserAdded,
+}: AddUsersProps) => {
   const [loading, setLoading] = useState(false);
-  const [usersData, setUsersData] = useState([
+  const [usersData, setUsersData] = useState<userData[]>([
     {
       firstName: "",
       lastName: "",
       email: "",
       password: "",
       role: "User",
-      team: "Default team",
+      team: "",
     }
   ]);
 
@@ -38,7 +58,7 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
         email: "",
         password: "",
         role: "User",
-        team: "Default team",
+        team: "",
       },
     ]);
   };
@@ -51,72 +71,159 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
 
   const updateUserField = (
     index: number,
-    field: string,
+    field: keyof userData,
     value: string
   ) => {
-    const updated = [...usersData];
-
-    updated[index] = {
-      ...updated[index],
-      [field]: value,
-    };
-
-    setUsersData(updated);
+    setUsersData((prev) =>
+      prev.map((user, i) =>
+        i === index
+          ? { ...user, [field]: value }
+          : user
+      )
+    )
   }
 
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (loading) return;
+
+    // -----------------------------
+    // 1. Validate emails
+    // -----------------------------
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    for (const user of usersData) {
+      const email = user.email.trim().toLowerCase();
+
+      if (!email) {
+        toast.error("Email is required");
+        return;
+      }
+
+      if (!emailRegex.test(email)) {
+        toast.error(`Invalid email: ${user.email}`);
+        return;
+      }
+    }
+
+    // -----------------------------
+    // 2. Check duplicate emails
+    //    inside this modal
+    // -----------------------------
+    const emails = usersData.map((user) =>
+      user.email.trim().toLowerCase()
+    );
+
+    const duplicateEmails = emails.filter(
+      (email, index) =>
+        emails.indexOf(email) !== index
+    );
+
+    if (duplicateEmails.length > 0) {
+      toast.error(
+        `Duplicate email: ${duplicateEmails[0]}`
+      );
+      return;
+    }
+
+    // -----------------------------
+    // 3. Validate passwords
+    // -----------------------------
+    if (!sendInvite) {
+      const missingPassword = usersData.find(
+        (user) => !user.password
+      );
+
+      if (missingPassword) {
+        toast.error(
+          `Password is required for ${missingPassword.email}`
+        );
+        return;
+      }
+    }
 
     try {
       setLoading(true);
 
+      // -----------------------------
+      // 4. Get existing users
+      // -----------------------------
+      const existingResponse = await API.get(
+        "/users/all-users"
+      );
+
+      const existingUsers = existingResponse.data || [];
+
+      const existingEmails = new Set(
+        existingUsers
+          .map((user: any) =>
+            user.email?.trim().toLowerCase()
+          )
+          .filter(Boolean)
+      );
+
+      // -----------------------------
+      // 5. Check whether email exists
+      // -----------------------------
       for (const user of usersData) {
+        const email = user.email.trim().toLowerCase();
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(user.email)) {
-          alert("Please enter valid email");
+        if (existingEmails.has(email)) {
+          toast.error(
+            `${email} already exists`
+          );
           return;
-        }
-
-        if (!sendInvite && !user.password) {
-          alert("Password is required");
-          return;
-        }
-
-        if (sendInvite) {
-
-          await API.post("/users/invite", {
-            email: user.email.trim(),
-            role: user.role.toLowerCase(),
-            team: user.team,
-          });
-
-        } else {
-
-          await API.post("/users/create-user", {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            email: user.email.trim(),
-            password: user.password,
-            role: user.role.toLowerCase(),
-            team: user.team,
-          });
-
         }
       }
 
-      const updatedUsers = await API.get("/users/all-users");
+      // -----------------------------
+      // 6. Create / invite users
+      // -----------------------------
+      for (const user of usersData) {
+        const email = user.email.trim().toLowerCase();
 
-      setUsers(updatedUsers.data);
+        if (sendInvite) {
+          await API.post("/users/invite", {
+            email,
+            role: user.role.toLowerCase(),
+            team: user.team,
+          });
+        } else {
+          await API.post("/users/create-user", {
+            firstName: user.firstName.trim(),
+            lastName: user.lastName.trim(),
+            email,
+            password: user.password,
+            role: user.role.toLowerCase(),
+            team: user.team,
+            
+          });
+        }
+      }
 
-      alert("Invite sent successfully");
+      // -----------------------------
+      // 7. Refresh users in parent
+      //    WITHOUT browser refresh
+      // -----------------------------
+      await onUserAdded();
 
-      setTimeout(() => {
-        setShowAddModal(false);
-      }, 500);
+      // -----------------------------
+      // 8. Success toast
+      // -----------------------------
+      toast.success(
+        sendInvite
+          ? usersData.length === 1
+            ? "Invitation sent successfully"
+            : "Invitations sent successfully"
+          : usersData.length === 1
+            ? "User added successfully"
+            : "Users added successfully"
+      );
 
+      // -----------------------------
+      // 9. Reset form
+      // -----------------------------
       setUsersData([
         {
           firstName: "",
@@ -124,16 +231,29 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
           email: "",
           password: "",
           role: "User",
-          team: "Default team",
+          team: "",
         },
       ]);
 
+      // -----------------------------
+      // 10. Close modal
+      // -----------------------------
+      setShowAddModal(false);
 
     } catch (err: unknown) {
-      const error = err as AxiosError<{ message?: string }>;
-      alert(error?.response?.data?.message || "Failed to send invite");
+      const error = err as AxiosError<{
+        message?: string;
+      }>;
+
+      toast.error(
+        error.response?.data?.message ||
+        (sendInvite
+          ? "Failed to send invitation"
+          : "Failed to create user")
+      );
+
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 
@@ -166,7 +286,7 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
       const res = await API.get("/teams");
       setTeams(res.data || []);
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   }
 
@@ -264,9 +384,14 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
                                 }
                                 className='w-full h-10 appearance-none rounded-md border-0 px-3 pr-10 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
                               >
-                                {["Default team", ...teams.map((t) => t.name)].map((team) => (
-                                  <option key={team} value={team}>
-                                    {team}
+                                <option value="">Select team</option>
+
+                                {teams.map((team) => (
+                                  <option
+                                    key={team._id}
+                                    value={team._id}
+                                  >
+                                    {team.name}
                                   </option>
                                 ))}
                               </select>
@@ -402,9 +527,14 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
                                 }
                                 className='w-full h-10 appearance-none rounded-md border-0 px-3 pr-10 bg-white text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300'
                               >
-                                {["Default team", ...teams.map((t) => t.name)].map((team) => (
-                                  <option key={team} value={team}>
-                                    {team}
+                                <option value="">Select team</option>
+
+                                {teams.map((team) => (
+                                  <option
+                                    key={team._id}
+                                    value={team._id}
+                                  >
+                                    {team.name}
                                   </option>
                                 ))}
                               </select>
@@ -504,10 +634,11 @@ const AddUsers = ({ setShowAddModal, setUsers }: any) => {
       </div >
 
       {showBulkInvite && (
-        <BulkInvites
-          setShowBulkInvite={setShowBulkInvite}
-          setUsers={setUsers}
-        />
+       <BulkInvites
+  setShowBulkInvite={setShowBulkInvite}
+  setUsers={setUsers}
+  onUserAdded={onUserAdded}
+/>
       )}
     </>
   )

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import API from "@/api";
+import toast from "react-hot-toast";
 
 export default function VerifyEmailChangePage() {
 
@@ -25,17 +26,15 @@ export default function VerifyEmailChangePage() {
 
                 setSuccess(true);
 
-                setMessage(
+                toast.success(
                     res.data.message || "Email updated successfully"
                 );
 
             } catch (err: any) {
 
-                console.log(err);
-
                 setSuccess(false);
 
-                setMessage(
+                toast.error(
                     err?.response?.data?.message ||
                     "Invalid or expired verification link"
                 );

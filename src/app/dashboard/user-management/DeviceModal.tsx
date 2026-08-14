@@ -21,16 +21,30 @@ const DeviceModal = ({
     const [devices, setDevices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const formatLocalDateTime = (value: string | Date) => {
+    if (!value) return "-";
+
+    return new Date(value).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+    });
+};
+
     useEffect(() => {
         const fetchDevices = async () => {
 
             try {
                 const res = await API.get(`/users/${user._id || user.id}/devices`);
 
-                setDevices(res.data.devices);
+               setDevices(res.data.devices || []);
 
             } catch (err) {
-                console.log(err);
+                console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -41,20 +55,33 @@ const DeviceModal = ({
         }
     }, [user])
 
-    const handleLogoutDevice = async (
-        deviceId: number
-    ) => {
+    const handleLogoutDevice = async (deviceId: string) => {
         try {
-            console.log("Logout device:", deviceId);
+            if (!deviceId) {
+                console.error("Device ID is missing");
+                return;
+            }
 
-            // future api
-            // await API.post(`/devices/Logout/${deviceId}`);
+            const userId = user._id || user.id;
 
-            alert("Device signed out");
-        } catch (err) {
-            console.log(err);
+            await API.post(
+                `/users/${userId}/devices/${deviceId}/logout`
+            );
+
+            // Remove the signed-out device from the displayed list
+            setDevices((prev) =>
+                prev.filter(
+                    (device) => device.deviceId !== deviceId
+                )
+            );
+
+        } catch (err: any) {
+            console.error(
+                "DEVICE LOGOUT ERROR:",
+                err.response?.data || err
+            );
         }
-    }
+    };
     return (
         <>
             <div role='dialog' className='relative z-50'>
@@ -95,7 +122,7 @@ const DeviceModal = ({
 
                                     devices.map((device: any) => (
                                         <div
-                                            key={device._id || device.loginTime}
+                                            key={device.deviceId}
                                             className='rounded-md border border-gray-200 p-4 shadow-sm'>
                                             <div className='flex justify-between items-center mb-3'>
                                                 <div className='text-sm font-medium text-gray-800 flex items-center gap-2'>
@@ -105,7 +132,7 @@ const DeviceModal = ({
 
                                                 <button
                                                     onClick={() =>
-                                                        handleLogoutDevice(device.id)
+                                                        handleLogoutDevice(device.deviceId)
                                                     }
                                                     className="inline-flex items-center gap-2 rounded-md border border-red-600 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-50">
                                                     <TbLogout className="h-5 w-5" />
@@ -124,9 +151,9 @@ const DeviceModal = ({
 
                                             <p className="text-sm text-gray-600 mt-2">
                                                 <b>Login Time:</b>{" "}
-                                                {device.loginTime} |
+                                                {formatLocalDateTime(device.loginTime)} |
                                                 <b className="ml-2">Last Sync:</b>{" "}
-                                                {device.lastSync}
+                                               {formatLocalDateTime(device.lastSync)}
                                             </p>
                                         </div>
                                     ))

@@ -63,7 +63,7 @@ const EditUserModal = ({
 
         } catch (err) {
 
-            console.log(err);
+            console.error(err);
 
         } finally {
 
@@ -76,7 +76,7 @@ const EditUserModal = ({
             const res = await API.get("/teams");
             setTeams(res.data || []);
         } catch (err) {
-            console.log(err);
+            console.error(err);
         }
     };
 
