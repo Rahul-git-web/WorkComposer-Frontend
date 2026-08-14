@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useOptionalDesktop } from "@/context/DesktopContext";
 import { createPortal } from "react-dom";
 import { FiSettings } from "react-icons/fi";
 import { CiImport } from "react-icons/ci";
@@ -35,6 +36,7 @@ const ProductivityCard = ({
 }: ProductivityCardProps) => {
 
     const router = useRouter();
+    const desktop = useOptionalDesktop();
 
     const [reportsOpen, setReportsOpen] = useState(false);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -50,7 +52,7 @@ const ProductivityCard = ({
     const portalMenuRef = useRef<HTMLDivElement>(null);
 
     const isDesktop =
-    typeof window !== "undefined" && !!window.electronAPI;
+        typeof window !== "undefined" && !!window.electronAPI;
 
 
     useEffect(() => {
@@ -311,14 +313,15 @@ const ProductivityCard = ({
                                         type="button"
                                         title="Configure"
                                         onClick={() => {
-                                            if (isDesktop) {
-                                                window.location.href =
-                                                    "/dashboard/settings/time-tracking/productivity";
-                                            } else {
-                                                router.push(
-                                                    "/dashboard/settings/time-tracking/productivity"
-                                                );
+                                            if (isDesktop && desktop) {
+                                                desktop.setActivePage("settings");
+                                                desktop.setActiveSetting?.("productivity");
+                                                return;
                                             }
+
+                                            router.push(
+                                                "/dashboard/settings/time-tracking/productivity"
+                                            );
                                         }}
                                         className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
                                     >
