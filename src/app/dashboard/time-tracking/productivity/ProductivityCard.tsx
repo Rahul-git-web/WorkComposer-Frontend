@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { FiSettings } from "react-icons/fi";
 import { CiImport } from "react-icons/ci";
@@ -33,6 +34,8 @@ const ProductivityCard = ({
     setReport,
 }: ProductivityCardProps) => {
 
+    const router = useRouter();
+
     const [reportsOpen, setReportsOpen] = useState(false);
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [menuPosition, setMenuPosition] = useState({
@@ -45,6 +48,9 @@ const ProductivityCard = ({
     } | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const portalMenuRef = useRef<HTMLDivElement>(null);
+
+    const isDesktop =
+    typeof window !== "undefined" && !!window.electronAPI;
 
 
     useEffect(() => {
@@ -77,7 +83,7 @@ const ProductivityCard = ({
         };
     }, []);
 
-   
+
     const classifyApp = async (
 
         appName: string,
@@ -301,14 +307,24 @@ const ProductivityCard = ({
                             <div className="flex items-center justify-between gap-2">
                                 <h2 className="text-lg font-bold text-gray-800 flex-shrink-0">Productivity</h2>
                                 <div className="flex items-center gap-2 flex-shrink-0">
-                                    <Link
-                                        href="/dashboard/settings/time-tracking/productivity"
+                                    <button
+                                        type="button"
                                         title="Configure"
-                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                                        onClick={() => {
+                                            if (isDesktop) {
+                                                window.location.href =
+                                                    "/dashboard/settings/time-tracking/productivity";
+                                            } else {
+                                                router.push(
+                                                    "/dashboard/settings/time-tracking/productivity"
+                                                );
+                                            }
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm cursor-pointer"
                                     >
                                         <FiSettings className="h-4 w-4" />
                                         Configure
-                                    </Link>
+                                    </button>
                                     <button
                                         title="Export"
                                         onClick={() => setReportsOpen(true)}
