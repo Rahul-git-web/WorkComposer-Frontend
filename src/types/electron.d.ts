@@ -1,4 +1,4 @@
-export {};
+export { };
 
 declare global {
     interface Window {
@@ -14,6 +14,11 @@ declare global {
             refreshToken: () => Promise<{
                 success: boolean;
                 accessToken: string | null;
+            }>;
+
+            logoutElectron: () => Promise<{
+                success: boolean;
+                message?: string;
             }>;
 
             onTokenRefreshed: (

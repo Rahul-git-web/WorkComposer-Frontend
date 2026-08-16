@@ -99,6 +99,12 @@ export default function Sidebar({
       setLoggingOut(true);
       setShowProfile(false);
 
+      // Clear Electron authentication + stop desktop tracking
+      if (window.electronAPI) {
+        await window.electronAPI.logoutElectron();
+      }
+
+      // Existing backend logout
       await API.post("/auth/logout");
 
       localStorage.removeItem("accessToken");
@@ -107,6 +113,7 @@ export default function Sidebar({
 
       router.replace("/authenticate/login");
     } catch (err) {
+      console.error("Logout failed:", err);
       toast.error("Failed to logout");
     } finally {
       setLoggingOut(false);
@@ -341,11 +348,11 @@ export default function Sidebar({
       </aside>
 
       {/* Desktop Module Sidebar */}
-     {currentSidebar && (
-    <div className="hidden xl:block fixed left-[78px] top-16 bottom-0 w-72 overflow-y-auto z-30 hide-scrollbar">
-        {currentSidebar}
-    </div>
-)}
+      {currentSidebar && (
+        <div className="hidden xl:block fixed left-[78px] top-16 bottom-0 w-72 overflow-y-auto z-30 hide-scrollbar">
+          {currentSidebar}
+        </div>
+      )}
 
       {/* Mobile / Tablet Sidebar */}
       {moduleSidebarOpen && currentSidebar && (
