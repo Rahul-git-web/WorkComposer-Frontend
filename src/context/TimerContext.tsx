@@ -36,7 +36,7 @@ type TimerContextType = {
 
   stop: () => void;
 
-   finishDay: () => Promise<boolean>;
+  finishDay: () => Promise<boolean>;
 
   duration: number;
 
@@ -118,40 +118,40 @@ export const TimerProvider = ({ children }: Props) => {
     }
 
     if (finishedToday) {
-    toast.error(
+      toast.error(
         "You have already finished working for today. You can start again tomorrow."
-    );
-    return;
-}
+      );
+      return;
+    }
 
     socket.emit("startTimer", {
       userId,
       project: projectId,
       task: taskId,
     });
- }, [isTracking, attendanceChecked, finishedToday]);
+  }, [isTracking, attendanceChecked, finishedToday]);
 
-useEffect(() => {
+  useEffect(() => {
     if (!user) return;
 
     if (!effectiveSettings) return;
 
     if (!attendanceChecked) return;
 
-  if (finishedToday) {
-    toast.error(
+    if (finishedToday) {
+      toast.error(
         "You have already finished working for today. You can start again tomorrow."
-    );
-    return;
-}
+      );
+      return;
+    }
 
     const mode = effectiveSettings?.tracking?.trackingMode;
 
     if (
-        mode === "manual" &&
-        !effectiveSettings?.tracking?.startTrackingOnBoot
+      mode === "manual" &&
+      !effectiveSettings?.tracking?.startTrackingOnBoot
     ) {
-        return;
+      return;
     }
 
     if (isTracking || timer) return;
@@ -162,7 +162,7 @@ useEffect(() => {
 
     start(user._id, null, null);
 
-}, [
+  }, [
     user,
     effectiveSettings,
     timer,
@@ -170,7 +170,7 @@ useEffect(() => {
     start,
     attendanceChecked,
     finishedToday,
-]);
+  ]);
 
   useEffect(() => {
     isTrackingRef.current = isTracking;
@@ -217,16 +217,19 @@ useEffect(() => {
 
 
   // STOP
-  const stop = useCallback(async () => {
+const stop = useCallback(() => {
+    if (!timer?._id) return;
 
-    if (!timer) return;
-
-    window.electronAPI?.stopTracking();
+    if (!socket.connected) {
+        toast.error("Connection lost. Reconnecting...");
+        socket.connect();
+        return;
+    }
 
     socket.emit("stopTimer", {
-      timerId: timer._id,
+        timerId: timer._id,
     });
-  }, [timer]);
+}, [timer]);
 
   useEffect(() => {
     if (!user) return;
@@ -245,48 +248,48 @@ useEffect(() => {
   }, [user, stop]);
 
   const finishDay = useCallback(async () => {
-   if (finishedToday) {
-    toast.error(
+    if (finishedToday) {
+      toast.error(
         "You have already finished working for today. You can start again tomorrow."
-    );
-    return false;
-}
+      );
+      return false;
+    }
 
     try {
-        // If currently tracking, stop first so the
-        // current session is saved before finishing.
-        if (isTracking) {
-            stop();
+      // If currently tracking, stop first so the
+      // current session is saved before finishing.
+      if (isTracking) {
+        stop();
 
-            // Give the socket/session save a moment to complete.
-            await new Promise((resolve) => setTimeout(resolve, 300));
-        }
+        // Give the socket/session save a moment to complete.
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
 
-        const { data } = await API.post("/attendance/finish");
+      const { data } = await API.post("/attendance/finish");
 
 
-        setFinishedToday(true);
+      setFinishedToday(true);
 
-        // Refresh today's totals after finishing.
-        await refreshTodayWork();
+      // Refresh today's totals after finishing.
+      await refreshTodayWork();
 
-        return true;
+      return true;
     } catch (err: any) {
-        console.error("FINISH DAY ERROR:", err);
+      console.error("FINISH DAY ERROR:", err);
 
-        console.error(
-            err?.response?.data?.message ||
-            "Failed to finish workday"
-        );
+      console.error(
+        err?.response?.data?.message ||
+        "Failed to finish workday"
+      );
 
-        return false;
+      return false;
     }
-}, [
+  }, [
     finishedToday,
     isTracking,
     stop,
     refreshTodayWork,
-]);
+  ]);
 
 
   useEffect(() => {
@@ -347,9 +350,12 @@ useEffect(() => {
 
     socket.on("timerStopped", (data) => {
       handlingSleep.current = false;
+
       setTimer(null);
       setIsTracking(false);
       setDuration(0);
+
+      window.electronAPI?.stopTracking();
 
       window.electronAPI?.updateTrackingBar({
         duration: 0,
