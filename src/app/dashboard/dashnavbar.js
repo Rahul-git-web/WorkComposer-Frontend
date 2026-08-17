@@ -199,8 +199,21 @@ const DashNavbar = () => {
 
           {/* Users */}
           {canManageUsersTeams && (
-            <button className="hidden sm:flex items-center gap-2 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 rounded text-sm font-semibold">
-              <FaUsers className="text-indigo-600" />
+            <button
+              onClick={() => router.push("/dashboard/user-management")}
+              className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded text-sm font-semibold transition ${
+                pathname.startsWith("/dashboard/user-management")
+                  ? "bg-indigo-600 text-white"
+                  : "bg-indigo-50 hover:bg-indigo-100 text-gray-800"
+              }`}
+            >
+              <FaUsers
+                className={
+                  pathname.startsWith("/dashboard/user-management")
+                    ? "text-white"
+                    : "text-indigo-600"
+                }
+              />
               <span className="hidden sm:inline">Users</span>
             </button>
           )}
