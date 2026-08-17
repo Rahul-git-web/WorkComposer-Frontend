@@ -22,6 +22,8 @@ const DashNavbar = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [showDesktopDownloadModal, setShowDesktopDownloadModal] =
+    useState(false);
   const appRef = useRef(null);
   const profileRef = useRef(null);
 
@@ -41,7 +43,7 @@ const DashNavbar = () => {
       await API.post("/auth/logout");
       router.push("/authenticate/login");
     } catch (err) {
-     toast.error("Logout failed", err);
+      toast.error("Logout failed", err);
     }
   };
 
@@ -65,17 +67,12 @@ const DashNavbar = () => {
   const { isTracking, start, stop } = useTimer();
 
   const handleTracking = () => {
-
-    if (!user?._id) {
-      toast.error("User not loaded");
+    if (isTracking) {
+      stop();
       return;
     }
 
-    if (isTracking) {
-      stop();
-    } else {
-      start(user?._id);
-    }
+    setShowDesktopDownloadModal(true);
   };
 
   const fetchPendingCount = async () => {
@@ -347,6 +344,56 @@ const DashNavbar = () => {
       </div>
 
       <ReportsModal open={reportsOpen} onClose={() => setReportsOpen(false)} />
+
+      {showDesktopDownloadModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Desktop App Required
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  WorkComposer time tracking runs through the Desktop app. To
+                  start tracking your time, download and install the
+                  WorkComposer Desktop application.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowDesktopDownloadModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDesktopDownloadModal(false)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDesktopDownloadModal(false);
+                  router.push("/#download");
+                }}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                Download Desktop App
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

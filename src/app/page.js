@@ -256,7 +256,7 @@ export default function HomePage() {
             </h2>
             <p className="text-slate-400 leading-relaxed">
               Configurable tracking that respects the difference between
-              "watching work happen" and "watching people."
+              &ldquo;watching work happen&rdquo; and &ldquo;watching people.&rdquo;
             </p>
           </div>
 
@@ -325,8 +325,8 @@ export default function HomePage() {
               Every setting here is visible to the person being tracked.
             </h2>
             <p className="text-slate-400 leading-relaxed">
-              WorkComposer's monitoring options live in a settings panel every
-              employee can open — not a hidden config file. What's on is on, in
+              WorkComposer&rsquo;s monitoring options live in a settings panel every
+              employee can open — not a hidden config file. What&rsquo;s on is on, in
               plain view, for everyone.
             </p>
 
@@ -399,7 +399,7 @@ export default function HomePage() {
               Set it up in under two minutes.
             </h2>
             <p className="text-slate-400 max-w-xl mx-auto leading-relaxed">
-              Install, sign in, and WorkComposer starts logging the moment you press start — or automatically, if your shift schedule says it's time.
+              Install, sign in, and WorkComposer starts logging the moment you press start — or automatically, if your shift schedule says it&apos;s time.
             </p>
 
             <div className="pt-4 flex justify-center">
@@ -421,7 +421,7 @@ export default function HomePage() {
                 <div className="text-left">
                   <b className="block text-base leading-none">Windows</b>
                   <span className="text-xs text-indigo-200">
-                    v2.4.1 · .exe · 64-bit
+                    v1.1.0 · .exe · 64-bit
                   </span>
                 </div>
               </a>
