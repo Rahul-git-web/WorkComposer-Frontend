@@ -32,7 +32,7 @@ export default function ReportsSidebar({
 
     const [isOpen, setIsOpen] = useState(false);
 
-const { closeSidebar } = useDesktopNavigation(desktop);
+    const { closeSidebar } = useDesktopNavigation(desktop);
 
     const pathname = usePathname();
 
@@ -49,25 +49,25 @@ const { closeSidebar } = useDesktopNavigation(desktop);
             : ""
         }`;
 
-  const navigate = (report: string, path: string) => {
+    const navigate = (report: string, path: string) => {
 
-    closeSidebar();
+        closeSidebar();
 
-    if (setActiveReport) {
-        setActiveReport(report);
-        return;
-    }
+        if (setActiveReport) {
+            setActiveReport(report);
+            return;
+        }
 
-    router.push(path);
-};
+        router.push(path);
+    };
 
     return (
         <div className="space-y-1">
 
             <>
-               {desktop && (
-    <DesktopModuleHeader />
-)}
+                {desktop && (
+                    <DesktopModuleHeader />
+                )}
 
                 <a
                     href="/dashboard/time-tracking/overview"
@@ -172,20 +172,28 @@ const { closeSidebar } = useDesktopNavigation(desktop);
                 </a>
 
                 {/* Location */}
-                <a
-                    href="/dashboard/time-tracking/location"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        setIsOpen(false);
-                        navigate("location", "/dashboard/time-tracking/location")
-                    }}
-                    className={getClass("/dashboard/time-tracking/location")}
-                >
-                    <div className="shrink-0 flex items-center justify-center w-8 h-8">
-                        <MapPin className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <span className="text-sm font-bold">Location</span>
-                </a>
+                {user?.permissions?.includes("manage_users") && (
+                    <a
+                        href="/dashboard/time-tracking/location"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setIsOpen(false);
+                            navigate(
+                                "location",
+                                "/dashboard/time-tracking/location"
+                            );
+                        }}
+                        className={getClass("/dashboard/time-tracking/location")}
+                    >
+                        <div className="shrink-0 flex items-center justify-center w-8 h-8">
+                            <MapPin className="h-5 w-5 text-gray-400" />
+                        </div>
+
+                        <span className="text-sm font-bold">
+                            Location
+                        </span>
+                    </a>
+                )}
             </>
 
         </div>

@@ -44,11 +44,11 @@ export default function DashboardLayout({ children }) {
       setUser(res.data);
 
       const organizationId =
-  res.data.organization?._id || res.data.organization;
+        res.data.organization?._id || res.data.organization;
 
-if (organizationId) {
-  socket.emit("joinOrganization", organizationId);
-}
+      if (organizationId) {
+        socket.emit("joinOrganization", organizationId);
+      }
     } catch {
       router.replace("/authenticate/login");
     }
@@ -82,11 +82,18 @@ if (organizationId) {
     ) {
       router.replace("/dashboard/time-tracking/overview");
     }
+
+    if (
+      pathname.startsWith("/dashboard/time-tracking/location") &&
+      !user.permissions?.includes("manage_users")
+    ) {
+      router.replace("/dashboard/time-tracking/overview");
+    }
   }, [pathname, user, router]);
 
   useEffect(() => {
     setShowInbox(false);
-}, [pathname]);
+  }, [pathname]);
 
   if (!user) return null;
 
