@@ -65,10 +65,10 @@ export default function FooterStatusBar() {
 
 
             <div className="flex items-center gap-7 pl-5">
-                <div className="flex items-center gap-2 bg-[#16253D] px-2 py-1 rounded-sm">
+                <div className="flex items-center gap-2 bg-[#16253D] px-2 py-1 rounded-sm transition-shadow duration-300 hover:shadow-[0_0_14px_rgba(74,222,128,0.3)]">
                     <span
                         className={`w-2 h-2 rounded-full ${isOnline
-                            ? "bg-green-400 animate-pulse"
+                            ? "bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.9)]"
                             : "bg-red-500"
                             }`}
                     />

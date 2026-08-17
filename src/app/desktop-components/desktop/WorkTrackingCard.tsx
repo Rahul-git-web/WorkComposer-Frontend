@@ -37,9 +37,9 @@ export default function WorkTimeTrackingCard() {
     };
 
     return (
-        <div className="bg-[#17253D] rounded-xl p-5 h-[220px]">
+        <div className="bg-[#17253D] rounded-xl p-5 h-[220px] transition-shadow duration-300 hover:shadow-[0_0_25px_rgba(59,130,246,0.25)]">
             <div className='flex items-center gap-3 '>
-                <div className="w-9 h-9 bg-blue-500 rounded-lg mb-3 flex items-center justify-center">
+                <div className="w-9 h-9 bg-blue-500 rounded-lg mb-3 flex items-center justify-center shadow-[0_0_12px_rgba(59,130,246,0.6)]">
                     <Clock className='w-4 h-4 text-white' />
                 </div>
                 <h3 className="text-gray-400 font-semibold mb-4 text-xs">

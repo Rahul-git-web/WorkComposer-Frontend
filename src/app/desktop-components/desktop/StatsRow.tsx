@@ -40,7 +40,7 @@ export default function StatsRow() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mt-3 px-3 ">
 
-            <div className="bg-[#0e1527] rounded-lg p-5">
+            <div className="bg-[#0e1527] rounded-lg p-5 transition-shadow duration-300 hover:shadow-[0_0_20px_rgba(22,163,74,0.25)]">
                 <div className="flex items-center gap-2">
                     <ChartColumn className='w-3.5 h-3.5 text-green-600' />
                     <p className="text-gray-400 text-xs font-semibold">
@@ -53,7 +53,7 @@ export default function StatsRow() {
                 </h2>
             </div>
 
-            <div className="bg-[#0e1527] rounded-lg p-5">
+            <div className="bg-[#0e1527] rounded-lg p-5 transition-shadow duration-300 hover:shadow-[0_0_20px_rgba(37,99,235,0.25)]">
                 <div className='flex items-center gap-2'>
                     <FiCalendar className='w-3.5 h-3.5 text-blue-600' />
                     <p className="text-gray-400 text-xs font-semibold">
@@ -66,7 +66,7 @@ export default function StatsRow() {
                 </h2>
             </div>
 
-            <div className="bg-[#0e1527] rounded-lg p-5">
+            <div className="bg-[#0e1527] rounded-lg p-5 transition-shadow duration-300 hover:shadow-[0_0_20px_rgba(22,163,74,0.25)]">
                 <div className='flex items-center gap-2'>
                     <TrendingUp className='w-3.5 h-3.5 text-green-600' />
                     <p className="text-gray-400 text-xs font-semibold">
@@ -79,7 +79,7 @@ export default function StatsRow() {
                 </h2>
             </div>
 
-            <div className="bg-[#0e1527] rounded-lg p-5">
+            <div className="bg-[#0e1527] rounded-lg p-5 transition-shadow duration-300 hover:shadow-[0_0_20px_rgba(168,85,247,0.25)]">
                 <div className='flex items-center gap-2'>
                     <Clock className='w-3.5 h-3.5 text-purple-500' />
                     <p className="text-gray-400 text-xs font-semibold">

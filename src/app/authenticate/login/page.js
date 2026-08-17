@@ -16,6 +16,8 @@ const SignInContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const verified = searchParams.get("verified");
+
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -23,6 +25,11 @@ const SignInContent = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
   const [otp, setOtp] = useState("");
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    setIsDesktop(typeof window !== "undefined" && !!window.electronAPI);
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -33,6 +40,10 @@ const SignInContent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isLoggingIn) return;
+
+    setIsLoggingIn(true);
 
     if (requiresTwoFactor) {
       try {
@@ -52,13 +63,14 @@ const SignInContent = () => {
         } else {
           router.push("/dashboard/time-tracking/overview");
         }
-
-        return;
       } catch (err) {
         toast.error(err.response?.data?.message || "Verification failed.");
         setOtp("");
-        return;
+      } finally {
+        setIsLoggingIn(false);
       }
+
+      return;
     }
 
     try {
@@ -88,6 +100,8 @@ const SignInContent = () => {
       }
     } catch (err) {
       toast.error(err.response?.data?.message);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -248,14 +262,24 @@ const SignInContent = () => {
               <div>
                 <button
                   type="submit"
-                  className="flex w-full justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200 disabled:opacity-70"
+                  disabled={isLoggingIn}
+                  className="flex w-full justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-70"
                   aria-live="polite"
                   tabIndex={10}
                 >
                   <span className="flex items-center justify-center gap-2">
-                    <span>
-                      {requiresTwoFactor ? "Verify & Sign In" : "Sign in"}
-                    </span>
+                    {isLoggingIn ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <span>
+                          {requiresTwoFactor ? "Verifying..." : "Signing in..."}
+                        </span>
+                      </>
+                    ) : (
+                      <span>
+                        {requiresTwoFactor ? "Verify & Sign In" : "Sign in"}
+                      </span>
+                    )}
                   </span>
                 </button>
               </div>
@@ -280,8 +304,7 @@ const SignInContent = () => {
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href =
-  `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
+                  window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-800 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 active:bg-gray-100 transition-all duration-200 shadow-sm"
                 tabIndex={11}
@@ -293,8 +316,7 @@ const SignInContent = () => {
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href =
-                    `${process.env.NEXT_PUBLIC_API_URL}/auth/microsoft`;
+                  window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/microsoft`;
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-800 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 active:bg-gray-100 transition-all duration-200 shadow-sm"
                 tabIndex={12}
@@ -317,24 +339,26 @@ const SignInContent = () => {
           </div>
         </div>
 
-        <div className="mt-6 text-center animate-fadeIn">
-          <p className="text-sm text-gray-600">
-            Not a member yet?{" "}
-            <button
-              onClick={() => router.push("/authenticate/signup")}
-              className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors duration-200 inline-flex items-center group"
-            >
-              {" "}
-              Start a 7 day trial
-              <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform duration-200" />
-            </button>
-          </p>
+        {!isDesktop && (
+          <div className="mt-6 text-center animate-fadeIn">
+            <p className="text-sm text-gray-600">
+              Not a member yet?{" "}
+              <button
+                onClick={() => router.push("/authenticate/signup")}
+                className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors duration-200 inline-flex items-center group"
+              >
+                {" "}
+                Start a 7 day trial
+                <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform duration-200" />
+              </button>
+            </p>
 
-          <p className="mt-2 text-xs text-gray-500">
-            {" "}
-            © 2026 WorkComposer. All rights reserved.{" "}
-          </p>
-        </div>
+            <p className="mt-2 text-xs text-gray-500">
+              {" "}
+              © 2026 WorkComposer. All rights reserved.{" "}
+            </p>
+          </div>
+        )}
       </div>
     </>
   );

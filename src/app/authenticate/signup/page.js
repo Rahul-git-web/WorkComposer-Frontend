@@ -18,6 +18,12 @@ const FreeTrialFormContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.electronAPI) {
+      router.replace("/authenticate/login");
+    }
+  }, [router]);
+
   const isGoogleSignup = searchParams.get("google") === "true";
   const googleToken = searchParams.get("token");
   const [googleUser, setGoogleUser] = useState(null);
@@ -31,6 +37,7 @@ const FreeTrialFormContent = () => {
   const [appleUser, setAppleUser] = useState(null);
 
   const [success, setSuccess] = useState("");
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -137,11 +144,15 @@ const FreeTrialFormContent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isSigningUp) return;
+
     // Password match check
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
+
+    setIsSigningUp(true);
 
     try {
       const res = await API.post("/auth/register", {
@@ -176,6 +187,8 @@ const FreeTrialFormContent = () => {
       router.push(`/authenticate/verify-mail?email=${email}`);
     } catch (err) {
       toast.error(err.response?.data?.message || "Something went wrong");
+    } finally {
+      setIsSigningUp(false);
     }
   };
 
@@ -450,13 +463,17 @@ const FreeTrialFormContent = () => {
               <div>
                 <button
                   type="submit"
-                  className="flex w-full justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200 disabled:opacity-70"
-                  aria-live="polite"
-                  tabIndex={9}
+                  disabled={isSigningUp}
+                  className="flex w-full justify-center items-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-indigo-500 hover:shadow-lg transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <span className="flex items-center justify-center gap-2">
-                    <span>Start the Free Trial</span>
-                  </span>
+                  {isSigningUp ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Start the Free Trial"
+                  )}
                 </button>
               </div>
 
@@ -490,7 +507,7 @@ const FreeTrialFormContent = () => {
 
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <a
-               href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google`}
+                href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google`}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-800 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 active:bg-gray-100 transition-all duration-200 shadow-sm"
                 tabIndex={10}
               >
@@ -501,8 +518,7 @@ const FreeTrialFormContent = () => {
               <button
                 type="button"
                 onClick={() => {
-                  window.location.href =
-                    `${process.env.NEXT_PUBLIC_API_URL}/auth/apple`;
+                  window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/apple`;
                 }}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-200 hover:bg-gray-800 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 active:bg-gray-100 transition-all duration-200 shadow-sm"
                 tabIndex={12}

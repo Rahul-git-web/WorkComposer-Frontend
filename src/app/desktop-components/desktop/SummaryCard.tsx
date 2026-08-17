@@ -59,7 +59,7 @@ export default function TodaySummaryCard() {
             <div className="grid grid-cols-2 gap-3">
 
                 {/* TASKS */}
-                <div className="bg-[#101B2D] rounded-xl p-3">
+                <div className="bg-[#101B2D] rounded-xl p-3 transition-shadow duration-300 hover:shadow-[0_0_18px_rgba(34,197,94,0.25)]">
                     <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3 text-green-500" />
 
@@ -78,7 +78,7 @@ export default function TodaySummaryCard() {
                 </div>
 
                 {/* BREAKS */}
-                <div className="bg-[#101B2D] rounded-lg p-3">
+                <div className="bg-[#101B2D] rounded-lg p-3 transition-shadow duration-300 hover:shadow-[0_0_18px_rgba(234,179,8,0.25)]">
                     <div className="flex items-center gap-1">
                         <LuCoffee className="h-3 w-3 text-yellow-500" />
 
@@ -94,7 +94,7 @@ export default function TodaySummaryCard() {
             </div>
 
             {/* ACTIVITY */}
-            <div className="mt-4 bg-[#3A2B22] border border-[#574131] rounded-lg p-3 flex justify-between text-xs">
+            <div className="mt-4 bg-[#3A2B22] border border-[#574131] rounded-lg p-3 flex justify-between text-xs transition-shadow duration-300 hover:shadow-[0_0_18px_rgba(234,179,8,0.25)]">
                 <div className="flex items-center gap-2">
                     <FiActivity className="h-3.5 w-3.5 text-yellow-500" />
 

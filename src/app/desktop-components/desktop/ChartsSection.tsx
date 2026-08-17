@@ -12,11 +12,11 @@ export default function ChartSection() {
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 p-4">
 
       {/* Today Chart */}
-      <div>
+      <div className="rounded-xl p-2 transition-shadow duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]">
         <div className="flex items-center justify-between mb-4">
 
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center shadow-[0_0_12px_rgba(168,85,247,0.6)]">
               <Clock3 className="w-4 h-4 text-white" />
             </div>
 
@@ -70,11 +70,11 @@ export default function ChartSection() {
       </div>
 
       {/* Last 30 Days Chart */}
-      <div>
+      <div className="rounded-xl p-2 transition-shadow duration-300 hover:shadow-[0_0_25px_rgba(34,211,238,0.25)]">
         <div className="flex items-center justify-between mb-4">
 
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center shadow-[0_0_12px_rgba(34,211,238,0.6)]">
               <CalendarDays className="w-4 h-4 text-white" />
             </div>
 

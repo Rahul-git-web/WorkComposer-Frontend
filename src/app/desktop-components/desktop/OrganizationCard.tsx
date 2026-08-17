@@ -38,9 +38,9 @@ export default function OrganizationCard() {
       : user?.reportTimezone || "Asia/Kolkata";
 
   return (
-    <div className="bg-[#17253D] rounded-xl p-4 border border-[#22324D] h-[220px]">
+    <div className="bg-[#17253D] rounded-xl p-4 border border-[#22324D] h-[220px] transition-shadow duration-300 hover:shadow-[0_0_25px_rgba(22,163,74,0.25)]">
       <div className='flex items-center gap-3 '>
-        <div className="w-9 h-9 bg-green-600 rounded-lg mb-3 flex items-center justify-center">
+        <div className="w-9 h-9 bg-green-600 rounded-lg mb-3 flex items-center justify-center shadow-[0_0_12px_rgba(22,163,74,0.6)]">
           <Building2 className='w-4 h-4 text-white' />
         </div>
 
