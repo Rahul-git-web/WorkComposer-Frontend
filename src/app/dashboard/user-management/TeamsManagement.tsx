@@ -738,10 +738,14 @@ export default function TeamsManagement({
                                                         >
 
                                                             {/* USER */}
-                                                            <td className='py-5 pl-6 max-w-xs'>
-                                                                <div className='flex items-center min-w-0'>
+                                                            <td className="py-5 pl-6 max-w-xs">
+                                                                <div className="flex items-center min-w-0">
 
-                                                                    <UserProfileTrigger user={user} className="shrink-0 cursor-pointer">
+                                                                    {/* Avatar */}
+                                                                    <UserProfileTrigger
+                                                                        user={user}
+                                                                        className="shrink-0 cursor-pointer"
+                                                                    >
                                                                         {user?.avatar ? (
                                                                             <img
                                                                                 src={user.avatar}
@@ -755,37 +759,21 @@ export default function TeamsManagement({
                                                                         )}
                                                                     </UserProfileTrigger>
 
-                                                                    <div className='ml-4 min-w-0'>
-                                                                        <UserProfileTrigger
-                                                                            user={user}
-                                                                            className="text-sm font-medium text-gray-900 truncate hover:text-indigo-600 cursor-pointer text-left"
-                                                                        >
-                                                                            {user.firstName ? `${user.firstName} ${user.lastName}` : "Pending User"}
-                                                                        </UserProfileTrigger>
-
-                                                                        <div className='text-sm text-gray-500 truncate'>
-                                                                            {user.email}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className='ml-4 min-w-0'>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setSelectedUser(user);
-                                                                                setShowProfileModal(true);
-                                                                            }}
-                                                                            className='text-sm font-medium text-gray-900 truncate hover:text-indigo-600 cursor-pointer text-left'
-                                                                        >
+                                                                    {/* Name + Email */}
+                                                                    <UserProfileTrigger
+                                                                        user={user}
+                                                                        className="ml-4 min-w-0 text-left cursor-pointer"
+                                                                    >
+                                                                        <div className="text-sm font-medium text-gray-900 truncate hover:text-indigo-600">
                                                                             {user.firstName
                                                                                 ? `${user.firstName} ${user.lastName}`
                                                                                 : "Pending User"}
-                                                                        </button>
+                                                                        </div>
 
-                                                                        <div className='text-sm text-gray-500 truncate'>
+                                                                        <div className="text-sm text-gray-500 truncate">
                                                                             {user.email}
                                                                         </div>
-                                                                    </div>
+                                                                    </UserProfileTrigger>
 
                                                                 </div>
                                                             </td>
