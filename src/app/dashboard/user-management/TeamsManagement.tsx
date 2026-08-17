@@ -1018,35 +1018,27 @@ export default function TeamsManagement({
                                                                                     </button>
 
                                                                                     {user.status === "archived" ? (
-
                                                                                         <button
-                                                                                            onClick={() =>
-                                                                                                handleUnarchiveUser(userId)
-                                                                                            }
-                                                                                            className='flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-green-600 cursor-pointer'
+                                                                                            onClick={() => handleUnarchiveUser(userId)}
+                                                                                            className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-green-600 cursor-pointer"
                                                                                         >
-                                                                                            <HiArrowUturnUp className='h-5 w-5' />
+                                                                                            <HiArrowUturnUp className="h-5 w-5" />
                                                                                             Unarchive
                                                                                         </button>
-
                                                                                     ) : (
-
-                                                                                        currentUser?.role?.toLowerCase() !== "owner" && (
-
+                                                                                        currentUser?.role?.toLowerCase() === "owner" ? null : (
                                                                                             <button
                                                                                                 onClick={() => {
                                                                                                     setSelectedUser(user);
                                                                                                     setShowArchiveModal(true);
                                                                                                     setOpenDropDown(null);
                                                                                                 }}
-                                                                                                className='flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 cursor-pointer'
+                                                                                                className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 cursor-pointer"
                                                                                             >
-                                                                                                <Archive className='h-5 w-5' />
+                                                                                                <Archive className="h-5 w-5" />
                                                                                                 Archive
                                                                                             </button>
-
                                                                                         )
-
                                                                                     )}
 
 
