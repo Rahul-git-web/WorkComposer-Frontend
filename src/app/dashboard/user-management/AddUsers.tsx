@@ -128,7 +128,21 @@ const AddUsers = ({
     }
 
     // -----------------------------
-    // 3. Validate passwords
+    // 3. Validate team
+    // -----------------------------
+    const missingTeam = usersData.find(
+      (user) => !user.team
+    );
+
+    if (missingTeam) {
+      toast.error(
+        `Please select a team for ${missingTeam.email}`
+      );
+      return;
+    }
+
+    // -----------------------------
+    // 4. Validate passwords
     // -----------------------------
     if (!sendInvite) {
       const missingPassword = usersData.find(
@@ -146,39 +160,10 @@ const AddUsers = ({
     try {
       setLoading(true);
 
-      // -----------------------------
-      // 4. Get existing users
-      // -----------------------------
-      const existingResponse = await API.get(
-        "/users/all-users"
-      );
 
-      const existingUsers = existingResponse.data || [];
-
-      const existingEmails = new Set(
-        existingUsers
-          .map((user: any) =>
-            user.email?.trim().toLowerCase()
-          )
-          .filter(Boolean)
-      );
 
       // -----------------------------
-      // 5. Check whether email exists
-      // -----------------------------
-      for (const user of usersData) {
-        const email = user.email.trim().toLowerCase();
-
-        if (existingEmails.has(email)) {
-          toast.error(
-            `${email} already exists`
-          );
-          return;
-        }
-      }
-
-      // -----------------------------
-      // 6. Create / invite users
+      // 5. Create / invite users
       // -----------------------------
       for (const user of usersData) {
         const email = user.email.trim().toLowerCase();
@@ -197,19 +182,19 @@ const AddUsers = ({
             password: user.password,
             role: user.role.toLowerCase(),
             team: user.team,
-            
+
           });
         }
       }
 
       // -----------------------------
-      // 7. Refresh users in parent
+      // 6. Refresh users in parent
       //    WITHOUT browser refresh
       // -----------------------------
       await onUserAdded();
 
       // -----------------------------
-      // 8. Success toast
+      // 7. Success toast
       // -----------------------------
       toast.success(
         sendInvite
@@ -222,7 +207,7 @@ const AddUsers = ({
       );
 
       // -----------------------------
-      // 9. Reset form
+      // 8. Reset form
       // -----------------------------
       setUsersData([
         {
@@ -236,7 +221,7 @@ const AddUsers = ({
       ]);
 
       // -----------------------------
-      // 10. Close modal
+      // 9. Close modal
       // -----------------------------
       setShowAddModal(false);
 
@@ -634,11 +619,11 @@ const AddUsers = ({
       </div >
 
       {showBulkInvite && (
-       <BulkInvites
-  setShowBulkInvite={setShowBulkInvite}
-  setUsers={setUsers}
-  onUserAdded={onUserAdded}
-/>
+        <BulkInvites
+          setShowBulkInvite={setShowBulkInvite}
+          setUsers={setUsers}
+          onUserAdded={onUserAdded}
+        />
       )}
     </>
   )
