@@ -1026,7 +1026,7 @@ export default function TeamsManagement({
                                                                                             Unarchive
                                                                                         </button>
                                                                                     ) : (
-                                                                                        currentUser?.role?.toLowerCase() === "owner" ? null : (
+                                                                                        user.role?.toLowerCase() !== "owner" && (
                                                                                             <button
                                                                                                 onClick={() => {
                                                                                                     setSelectedUser(user);
