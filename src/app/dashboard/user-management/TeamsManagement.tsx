@@ -1031,17 +1031,21 @@ export default function TeamsManagement({
 
                                                                                     ) : (
 
-                                                                                        <button
-                                                                                            onClick={() => {
-                                                                                                setSelectedUser(user);
-                                                                                                setShowArchiveModal(true);
-                                                                                                setOpenDropDown(null);
-                                                                                            }}
-                                                                                            className='flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 cursor-pointer'
-                                                                                        >
-                                                                                            <Archive className='h-5 w-5' />
-                                                                                            Archive
-                                                                                        </button>
+                                                                                        currentUser?.role?.toLowerCase() !== "owner" && (
+
+                                                                                            <button
+                                                                                                onClick={() => {
+                                                                                                    setSelectedUser(user);
+                                                                                                    setShowArchiveModal(true);
+                                                                                                    setOpenDropDown(null);
+                                                                                                }}
+                                                                                                className='flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 cursor-pointer'
+                                                                                            >
+                                                                                                <Archive className='h-5 w-5' />
+                                                                                                Archive
+                                                                                            </button>
+
+                                                                                        )
 
                                                                                     )}
 
@@ -1205,7 +1209,7 @@ export default function TeamsManagement({
 
                             <div className="mt-5">
                                 <p className="mb-2 text-sm font-medium text-gray-700">
-                                    Enter the user's email:
+                                    Enter the user&apos;s email:
                                 </p>
 
                                 <div className="mb-2 rounded-md bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700">
