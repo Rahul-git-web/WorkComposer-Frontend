@@ -464,7 +464,7 @@ export default function DateRangeModalPreview({ onClose, onApply, initialDate, }
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[3px] transition-all duration-300">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[3px] transition-all duration-300">
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden w-full max-w-4xl max-h-[90vh] flex flex-col transition-all duration-300">
 
         {/* Top Header - Close Button */}

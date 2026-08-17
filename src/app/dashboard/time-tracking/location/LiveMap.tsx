@@ -184,10 +184,10 @@ export default function LiveMap({
                 </div>
 
                 <div className="px-2 py-2">
-                    <div className="flex h-[calc(100vh-20rem)] min-h-[30rem] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <div className="relative h-[calc(100vh-20rem)] min-h-[30rem] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
 
-                        <div className="m-2 flex justify-end bg-none">
-                            <div className="inline-flex rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="absolute top-4 right-4 z-[1000]">
+                            <div className="inline-flex rounded-lg border border-gray-200 bg-white overflow-hidden shadow-md">
                                 <button
                                     onClick={() => setMapType("street")}
                                     className={`px-4 py-2 text-sm font-medium ${mapType === "street"
