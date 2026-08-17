@@ -58,6 +58,8 @@ export default function TeamsManagement({
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [editingManagerId, setEditingManagerId] = useState<string | null>(null);
     const [selectedManager, setSelectedManager] = useState("");
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [deleteEmail, setDeleteEmail] = useState("");
 
     const searchParams = useSearchParams();
 
@@ -154,21 +156,38 @@ export default function TeamsManagement({
 
     const handleDeleteUser = async (id: string) => {
         try {
-            await API.delete(`/users/${id}`);
+            await API.delete(`/users/${id}`, {
+                data: {
+                    email: deleteEmail.trim(),
+                },
+            });
 
             setUsers((prev: any) =>
                 prev.filter((user: any) =>
-                    (user._id || user.id) !== id)
+                    (user._id || user.id) !== id
+                )
             );
+
             setTotalUsers((prev: number) => prev - 1);
             setTotalPages(Math.ceil((totalUsers - 1) / 5));
 
+            // Close and reset delete confirmation
+            setShowDeleteModal(false);
+            setDeleteEmail("");
+            setSelectedUser(null);
             setOpenDropDown(null);
 
-        } catch (err) {
-            console.error(err)
+            toast.success("User deleted successfully");
+
+        } catch (err: any) {
+            console.error(err);
+
+            toast.error(
+                err?.response?.data?.message ||
+                "Failed to delete user"
+            );
         }
-    }
+    };
 
     const startUser = totalUsers === 0 ? 0 : (currentPage - 1) * 5 + 1;
     const endUser = Math.min(currentPage * 5, totalUsers);
@@ -1047,10 +1066,15 @@ export default function TeamsManagement({
                                                                                         ) && (
 
 
-                                                                                            <button onClick={() => {
-                                                                                                handleDeleteUser(userId)
-                                                                                            }}
-                                                                                                className='flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-red-600 cursor-pointer'>
+                                                                                            <button
+                                                                                                onClick={() => {
+                                                                                                    setSelectedUser(user);
+                                                                                                    setDeleteEmail("");
+                                                                                                    setShowDeleteModal(true);
+                                                                                                    setOpenDropDown(null);
+                                                                                                }}
+                                                                                                className='flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-red-600 cursor-pointer'
+                                                                                            >
                                                                                                 <HiOutlineTrash className='h-5 w-5' />
                                                                                                 Delete
                                                                                             </button>
@@ -1167,6 +1191,88 @@ export default function TeamsManagement({
 
                     setShowDeviceModal={setShowDeviceModal}
                 />
+            )}
+
+            {showDeleteModal && selectedUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+                    <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+                        <div className="p-6">
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-red-100">
+                                    <HiOutlineTrash className="h-5 w-5 text-red-600" />
+                                </div>
+
+                                <div>
+                                    <h2 className="text-lg font-semibold text-gray-900">
+                                        Delete user
+                                    </h2>
+
+                                    <p className="mt-1 text-sm text-gray-500">
+                                        This action cannot be undone. To confirm that you
+                                        want to permanently delete this user, enter their
+                                        email address below.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-5">
+                                <p className="mb-2 text-sm font-medium text-gray-700">
+                                    Enter the user's email:
+                                </p>
+
+                                <div className="mb-2 rounded-md bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700">
+                                    {selectedUser.email}
+                                </div>
+
+                                <input
+                                    type="email"
+                                    value={deleteEmail}
+                                    onChange={(e) => setDeleteEmail(e.target.value)}
+                                    placeholder="Enter email to confirm"
+                                    className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-red-500 sm:text-sm"
+                                    autoFocus
+                                />
+
+                                {deleteEmail &&
+                                    deleteEmail.trim().toLowerCase() !==
+                                    selectedUser.email?.trim().toLowerCase() && (
+                                        <p className="mt-2 text-xs text-red-600">
+                                            Email does not match.
+                                        </p>
+                                    )}
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setDeleteEmail("");
+                                    }}
+                                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={
+                                        deleteEmail.trim().toLowerCase() !==
+                                        selectedUser.email?.trim().toLowerCase()
+                                    }
+                                    onClick={() => {
+                                        handleDeleteUser(
+                                            selectedUser._id || selectedUser.id
+                                        );
+                                    }}
+                                    className="rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Delete user
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
 
