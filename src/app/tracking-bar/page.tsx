@@ -20,7 +20,7 @@ export default function TrackingBar() {
 
     return (
         <div
-            className="h-screen w-screen bg-transparent flex items-center justify-center"
+            className="fixed inset-0 overflow-hidden bg-transparent flex items-center justify-center"
             style={
                 {
                     WebkitAppRegion: "drag",
