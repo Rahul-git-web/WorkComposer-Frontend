@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function HomePage() {
+  const DESKTOP_DOWNLOAD_URL =
+    "https://github.com/Rahul-git-web/WorkComposer-Desktop/releases/download/v1.0.0/WorkComposer-Desktop-Setup-v1.0.0.exe";
+
   const [elapsed, setElapsed] = useState(14 * 60 + 32);
 
   useEffect(() => {
@@ -31,7 +34,7 @@ export default function HomePage() {
           }
         });
       },
-      { threshold: 0.15 }
+      { threshold: 0.15 },
     );
 
     items.forEach((item) => observer.observe(item));
@@ -129,7 +132,7 @@ export default function HomePage() {
 
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <a
-                  href="/workcomposer-windows-installer.exe"
+                  href={DESKTOP_DOWNLOAD_URL}
                   download
                   className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition shadow-xl shadow-indigo-600/25 flex items-center gap-2.5"
                 >
@@ -155,7 +158,7 @@ export default function HomePage() {
               </div>
 
               <p className="text-xs text-slate-500 pt-1">
-                v2.4.1 · 105 MB · macOS & Linux coming soon
+                v1.0.0 · 313 MB · Windows 10/11
               </p>
             </div>
 
@@ -225,7 +228,7 @@ export default function HomePage() {
             </div>
             <div>
               <b className="block text-3xl font-extrabold text-white font-mono">
-                2.4.1
+                1.0.0
               </b>
               <span className="text-xs text-slate-400 uppercase tracking-wider font-semibold">
                 CURRENT WINDOWS VERSION
@@ -256,7 +259,8 @@ export default function HomePage() {
             </h2>
             <p className="text-slate-400 leading-relaxed">
               Configurable tracking that respects the difference between
-              &ldquo;watching work happen&rdquo; and &ldquo;watching people.&rdquo;
+              &ldquo;watching work happen&rdquo; and &ldquo;watching
+              people.&rdquo;
             </p>
           </div>
 
@@ -272,7 +276,12 @@ export default function HomePage() {
               {
                 title: "Idle & activity detection",
                 desc: "Mouse, keyboard, and window focus are sampled locally to tell real focus time from an open tab left running.",
-                icon: <path d="M12 7v5l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z" strokeWidth="1.8" />,
+                icon: (
+                  <path
+                    d="M12 7v5l3 3M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    strokeWidth="1.8"
+                  />
+                ),
               },
               {
                 title: "App & URL context",
@@ -282,7 +291,12 @@ export default function HomePage() {
               {
                 title: "Shift-aware scheduling",
                 desc: "Tracking can auto-start and stop with each person's shift, and pause itself for scheduled breaks.",
-                icon: <path d="M3 9h18M8 3v3M16 3v3M3 4h18v16H3z" strokeWidth="1.8" />,
+                icon: (
+                  <path
+                    d="M3 9h18M8 3v3M16 3v3M3 4h18v16H3z"
+                    strokeWidth="1.8"
+                  />
+                ),
               },
               {
                 title: "Synced across every device",
@@ -310,7 +324,9 @@ export default function HomePage() {
                   </svg>
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">{f.title}</h3>
-                <p className="text-sm text-slate-400 leading-relaxed">{f.desc}</p>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  {f.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -318,16 +334,19 @@ export default function HomePage() {
       </section>
 
       {/* Privacy Section */}
-      <section id="privacy" className="py-24 border-b border-slate-800/40 bg-slate-950/30">
+      <section
+        id="privacy"
+        className="py-24 border-b border-slate-800/40 bg-slate-950/30"
+      >
         <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-6 space-y-6 reveal">
             <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight leading-snug">
               Every setting here is visible to the person being tracked.
             </h2>
             <p className="text-slate-400 leading-relaxed">
-              WorkComposer&rsquo;s monitoring options live in a settings panel every
-              employee can open — not a hidden config file. What&rsquo;s on is on, in
-              plain view, for everyone.
+              WorkComposer&rsquo;s monitoring options live in a settings panel
+              every employee can open — not a hidden config file. What&rsquo;s
+              on is on, in plain view, for everyone.
             </p>
 
             <ul className="space-y-4 pt-2">
@@ -336,7 +355,10 @@ export default function HomePage() {
                 "Location tracking is off by default and opt-in per workspace",
                 "Tokens and screenshots are encrypted at rest and in transit",
               ].map((item, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-slate-300">
+                <li
+                  key={i}
+                  className="flex items-start gap-3 text-sm text-slate-300"
+                >
                   <span className="p-1 rounded-md bg-indigo-950 border border-indigo-800/50 text-indigo-400 mt-0.5">
                     <svg
                       width="14"
@@ -358,10 +380,26 @@ export default function HomePage() {
           <div className="lg:col-span-6 reveal">
             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
               {[
-                { label: "Screenshot capture", detail: "Every 5 min, randomized ±20%", active: true },
-                { label: "Blur screenshots", detail: "Maximum blurring", active: true },
-                { label: "IP-based location", detail: "Workspace default: off", active: false },
-                { label: "Pause when inactive", detail: "After 3 minutes idle", active: true },
+                {
+                  label: "Screenshot capture",
+                  detail: "Every 5 min, randomized ±20%",
+                  active: true,
+                },
+                {
+                  label: "Blur screenshots",
+                  detail: "Maximum blurring",
+                  active: true,
+                },
+                {
+                  label: "IP-based location",
+                  detail: "Workspace default: off",
+                  active: false,
+                },
+                {
+                  label: "Pause when inactive",
+                  detail: "After 3 minutes idle",
+                  active: true,
+                },
               ].map((row, i) => (
                 <div
                   key={i}
@@ -399,12 +437,14 @@ export default function HomePage() {
               Set it up in under two minutes.
             </h2>
             <p className="text-slate-400 max-w-xl mx-auto leading-relaxed">
-              Install, sign in, and WorkComposer starts logging the moment you press start — or automatically, if your shift schedule says it&apos;s time.
+              Install, sign in, and WorkComposer starts logging the moment you
+              press start — or automatically, if your shift schedule says
+              it&apos;s time.
             </p>
 
             <div className="pt-4 flex justify-center">
               <a
-                href="/workcomposer-windows-installer.exe"
+                href={DESKTOP_DOWNLOAD_URL}
                 download
                 className="px-8 py-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition shadow-xl shadow-indigo-600/30 flex items-center gap-4"
               >
@@ -421,14 +461,14 @@ export default function HomePage() {
                 <div className="text-left">
                   <b className="block text-base leading-none">Windows</b>
                   <span className="text-xs text-indigo-200">
-                    v1.1.0 · .exe · 64-bit
+                    v1.0.0 · .exe · 64-bit
                   </span>
                 </div>
               </a>
             </div>
 
             <p className="text-xs text-slate-500 pt-4">
-              workcomposer.com/desktop · 105 MB · macOS & Linux coming soon
+              Windows 10/11 · 313 MB · macOS & Linux coming soon
             </p>
           </div>
         </div>
@@ -440,17 +480,33 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-blue-500 p-1">
               <svg viewBox="0 0 100 100" fill="none" className="w-full h-full">
-                <path d="M15 50 L35 75 L60 30" stroke="white" strokeWidth="14" strokeLinecap="round" />
-                <path d="M45 50 L65 75 L90 30" stroke="#93c5fd" strokeWidth="14" strokeLinecap="round" />
+                <path
+                  d="M15 50 L35 75 L60 30"
+                  stroke="white"
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M45 50 L65 75 L90 30"
+                  stroke="#93c5fd"
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                />
               </svg>
             </div>
             <span className="font-bold text-white font-mono">WorkComposer</span>
           </div>
 
           <div className="flex items-center gap-8 text-sm text-slate-400">
-            <a href="#features" className="hover:text-white transition">Features</a>
-            <a href="#privacy" className="hover:text-white transition">Privacy</a>
-            <a href="#download" className="hover:text-white transition">Download</a>
+            <a href="#features" className="hover:text-white transition">
+              Features
+            </a>
+            <a href="#privacy" className="hover:text-white transition">
+              Privacy
+            </a>
+            <a href="#download" className="hover:text-white transition">
+              Download
+            </a>
           </div>
 
           <span className="text-xs text-slate-500">© 2026 WorkComposer</span>
