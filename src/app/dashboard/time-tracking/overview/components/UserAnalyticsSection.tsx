@@ -30,11 +30,13 @@ export default function UserAnalyticsSection({
 
     // Reset the "loaded" signals whenever the user/date changes,
     // so we don't briefly show stale empty-state from a previous card
+    const selectedDateKey = selectedDate.toDateString();
+
     useEffect(() => {
         setScreenshotsHasData(null);
         setAppsHasData(null);
         setActivityHasData(null);
-    }, [userId, selectedDate]);
+    }, [userId, selectedDateKey]);
 
     const allLoaded =
         (canViewScreenshots ? screenshotsHasData !== null : true) &&
