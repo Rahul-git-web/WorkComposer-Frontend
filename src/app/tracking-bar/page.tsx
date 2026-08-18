@@ -107,15 +107,18 @@ export default function TrackingBar() {
                     {/* Expand (future) */}
 
                     <button
+                        onClick={() => {
+                            window.electronAPI.openMainWindow();
+                        }}
                         className="
-            h-6.5
-            w-6.5
-            flex
-            items-center
-            justify-center
-            hover:bg-[#3A3B58]
-            transition-colors
-        "
+        h-6.5
+        w-6.5
+        flex
+        items-center
+        justify-center
+        hover:bg-[#3A3B58]
+        transition-colors
+    "
                     >
                         <ChevronRight
                             size={14}

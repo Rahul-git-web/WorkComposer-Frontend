@@ -47,6 +47,8 @@ declare global {
 
             stopTracking: () => void;
 
+            openMainWindow: () => void;
+
             // Auto tracking
             onAutoStartTracking: (
                 callback: () => void
