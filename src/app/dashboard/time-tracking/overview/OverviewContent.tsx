@@ -5,6 +5,7 @@ import { IoIosPause } from "react-icons/io";
 import { FaRegEdit } from "react-icons/fa";
 import { Clock3 } from "lucide-react";
 import { FiPlusCircle, FiMinusCircle } from "react-icons/fi";
+import { useTimer } from "@/context/TimerContext";
 import { useState, useRef, useEffect } from "react";
 import UserAnalyticsSection from "./components/UserAnalyticsSection";
 import DailyActivityTimeline from "./components/DailyActivityTimeline";
@@ -51,6 +52,7 @@ export default function OverviewContent({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const menuRefs = useRef<Record<string, HTMLDivElement | null>>({});;
+  const { isTracking } = useTimer();
   const { user } = useDashboard();
 
   useEffect(() => {
@@ -148,213 +150,217 @@ export default function OverviewContent({
                         <div className="flex-shrink-0">
                           <div className="profile-image-container group relative w-12 h-12">
                             <div
-                              className={`absolute inset-0 rounded-full p-0.5 ${item.status?.includes("running")
-                                  ? "bg-linear-to-tr from-green-300 to-green-600"
-                                  : "bg-linear-to-tr from-red-300 to-red-600"
+                              className={`absolute inset-0 rounded-full p-0.5 ${(String(item.id) === String(user?._id) ? isTracking : item.status?.includes("running"))
+                                ? "bg-linear-to-tr from-green-300 to-green-600"
+                                : "bg-linear-to-tr from-red-300 to-red-600"
                                 } opacity-80`}
+                            >
                               <div className="absolute inset-px rounded-full bg-white"></div>
-                          </div>
+                            </div>
 
-                          <div className="relative w-full h-full transform group-hover:scale-105 transition-transform duration-300">
-                            {item.avatar?.trim() ? (
-                              <Image
-                                src={item.avatar}
-                                alt={item.name}
-                                fill
-                                unoptimized
-                                onClick={() => setProfileUserId(item.id)}
-                                className="cursor-pointer rounded-full object-cover shadow-md transition-all duration-300 group-hover:shadow-lg"
-                              />
-                            ) : (
-                              <div
-                                onClick={() => setProfileUserId(item.id)}
-                                className="h-full w-full cursor-pointer rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold text-lg shadow-md"
-                              >
-                                {item.name?.charAt(0).toUpperCase()}
-                              </div>
-                            )}
+                            <div className="relative w-full h-full transform group-hover:scale-105 transition-transform duration-300">
+                              {item.avatar?.trim() ? (
+                                <Image
+                                  src={item.avatar}
+                                  alt={item.name}
+                                  fill
+                                  unoptimized
+                                  onClick={() => setProfileUserId(item.id)}
+                                  className="cursor-pointer rounded-full object-cover shadow-md transition-all duration-300 group-hover:shadow-lg"
+                                />
+                              ) : (
+                                <div
+                                  onClick={() => setProfileUserId(item.id)}
+                                  className="h-full w-full cursor-pointer rounded-full bg-indigo-500 flex items-center justify-center text-white font-semibold text-lg shadow-md"
+                                >
+                                  {item.name?.charAt(0).toUpperCase()}
+                                </div>
+                              )}
 
-                            <div className="pointer-events-none absolute inset-0 rounded-full bg-blue-500 opacity-0 group-hover:opacity-5 transition-all duration-300" />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* User Info */}
-                      <div className="min-w-0 text-left flex-1">
-                        <button
-                          type="button"
-                          onClick={() => setProfileUserId(item.id)}
-                          className="text-left text-blue-700 font-bold text-lg truncate max-w-full md:max-w-xs cursor-pointer hover:text-indigo-600 transition-colors"
-                        >
-                          {item.name}
-                        </button>
-
-                        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-                          {(() => {
-                            const isItemTracking = item.status?.includes("running");
-                            return (
-                              <span
-                                className={`px-2 py-1 text-xs font-semibold rounded-md ${isItemTracking
-                                  ? "bg-green-100 text-green-700"
-                                  : "bg-red-100 text-red-700"
-                                  }`}
-                              >
-                                {isItemTracking ? "Tracking" : "Not tracking"}
-                              </span>
-                            );
-                          })()}
-
-                          <span className="text-gray-400">•</span>
-
-                          <span className="text-gray-700">
-                            <b>Last sync: </b>
-                            <span className="text-gray-600">
-                              {item.lastSync || "--"}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right Section */}
-                    <div className="md:col-span-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
-
-                      {/* Work + Break */}
-                      <div className="flex flex-row flex-wrap gap-6 sm:gap-8 lg:gap-16 text-sm md:justify-end w-full">
-
-                        {/* Work */}
-                        <div>
-                          <div className="flex items-center mb-1">
-                            <Clock3 className="w-5 h-5 mr-2 text-indigo-600" />
-                            <span className="text-sm font-medium text-gray-700 uppercase">
-                              Work Time
-                            </span>
-                          </div>
-                          <div className="text-blue-600 font-bold text-xl ml-7 whitespace-nowrap">
-                            {formatTime(item.workTime)}
+                              <div className="pointer-events-none absolute inset-0 rounded-full bg-blue-500 opacity-0 group-hover:opacity-5 transition-all duration-300" />
+                            </div>
                           </div>
                         </div>
 
-                        {/* Break */}
-                        <div>
-                          <div className="flex items-center mb-1">
-                            <IoIosPause className="w-5 h-5 mr-2 text-orange-500" />
-                            <span className="text-sm font-medium text-gray-700 uppercase">
-                              Break Time
-                            </span>
-                          </div>
-                          <div className="text-orange-600 font-bold text-xl ml-7 whitespace-nowrap">
-                            {formatTime(item.breakTime)}
-                          </div>
-                        </div>
-
-                        {/* Edit */}
-                        <div
-                          className="relative self-start sm:self-center sm:ml-2 lg:ml-4"
-                          ref={(el) => {
-                            menuRefs.current[item.id] = el;
-                          }}
-                        >
+                        {/* User Info */}
+                        <div className="min-w-0 text-left flex-1">
                           <button
-                            title="Edit time"
-                            onClick={() => {
-
-                              setOpenMenuId(
-                                openMenuId === item.id ? null : item.id
-                              );
-
-                            }}
-                            className="flex items-center px-3 py-2 hover:bg-indigo-100 rounded-md"
+                            type="button"
+                            onClick={() => setProfileUserId(item.id)}
+                            className="text-left text-blue-700 font-bold text-lg truncate max-w-full md:max-w-xs cursor-pointer hover:text-indigo-600 transition-colors"
                           >
-                            <FaRegEdit className="w-5 h-5 text-indigo-500 mr-2" />
-                            <span className="text-sm font-medium text-indigo-600">
-                              Edit time
-                            </span>
+                            {item.name}
                           </button>
 
-                          {openMenuId === item.id && (
-                            <div className="absolute right-0 mt-2 w-56 max-w-[90vw] rounded-md bg-white shadow-xl z-50 py-2">
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                            {(() => {
+                              const isCurrentUser = String(item.id) === String(user?._id);
 
-                              <div className="px-4 pb-2 text-xs font-semibold text-gray-400 uppercase">
-                                Time Options
-                              </div>
+                              const isItemTracking = isCurrentUser
+                                ? isTracking
+                                : item.status?.includes("running");
 
-                              <div
-                                onClick={() => {
+                              return (
+                                <span
+                                  className={`px-2 py-1 text-xs font-semibold rounded-md ${isItemTracking
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                                    }`}
+                                >
+                                  {isItemTracking ? "Tracking" : "Not tracking"}
+                                </span>
+                              );
+                            })()}
 
-                                  setOpenMenuId(null);
-                                  onAddManualTime();
-                                }}
-                                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                              >
-                                <FiPlusCircle className="text-green-600" />
-                                Add Manual Time
-                              </div>
+                            <span className="text-gray-400">•</span>
 
-                              {(user?.role === "owner" || user?.role === "admin") && (
+                            <span className="text-gray-700">
+                              <b>Last sync: </b>
+                              <span className="text-gray-600">
+                                {item.lastSync || "--"}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Section */}
+                      <div className="md:col-span-7 flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
+
+                        {/* Work + Break */}
+                        <div className="flex flex-row flex-wrap gap-6 sm:gap-8 lg:gap-16 text-sm md:justify-end w-full">
+
+                          {/* Work */}
+                          <div>
+                            <div className="flex items-center mb-1">
+                              <Clock3 className="w-5 h-5 mr-2 text-indigo-600" />
+                              <span className="text-sm font-medium text-gray-700 uppercase">
+                                Work Time
+                              </span>
+                            </div>
+                            <div className="text-blue-600 font-bold text-xl ml-7 whitespace-nowrap">
+                              {formatTime(item.workTime)}
+                            </div>
+                          </div>
+
+                          {/* Break */}
+                          <div>
+                            <div className="flex items-center mb-1">
+                              <IoIosPause className="w-5 h-5 mr-2 text-orange-500" />
+                              <span className="text-sm font-medium text-gray-700 uppercase">
+                                Break Time
+                              </span>
+                            </div>
+                            <div className="text-orange-600 font-bold text-xl ml-7 whitespace-nowrap">
+                              {formatTime(item.breakTime)}
+                            </div>
+                          </div>
+
+                          {/* Edit */}
+                          <div
+                            className="relative self-start sm:self-center sm:ml-2 lg:ml-4"
+                            ref={(el) => {
+                              menuRefs.current[item.id] = el;
+                            }}
+                          >
+                            <button
+                              title="Edit time"
+                              onClick={() => {
+
+                                setOpenMenuId(
+                                  openMenuId === item.id ? null : item.id
+                                );
+
+                              }}
+                              className="flex items-center px-3 py-2 hover:bg-indigo-100 rounded-md"
+                            >
+                              <FaRegEdit className="w-5 h-5 text-indigo-500 mr-2" />
+                              <span className="text-sm font-medium text-indigo-600">
+                                Edit time
+                              </span>
+                            </button>
+
+                            {openMenuId === item.id && (
+                              <div className="absolute right-0 mt-2 w-56 max-w-[90vw] rounded-md bg-white shadow-xl z-50 py-2">
+
+                                <div className="px-4 pb-2 text-xs font-semibold text-gray-400 uppercase">
+                                  Time Options
+                                </div>
+
                                 <div
                                   onClick={() => {
+
                                     setOpenMenuId(null);
-                                    onRemoveTime();
+                                    onAddManualTime();
                                   }}
                                   className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
                                 >
-                                  <FiMinusCircle className="text-red-600" />
-                                  Remove Time
+                                  <FiPlusCircle className="text-green-600" />
+                                  Add Manual Time
                                 </div>
-                              )}
-                            </div>
-                          )}
+
+                                {(user?.role === "owner" || user?.role === "admin") && (
+                                  <div
+                                    onClick={() => {
+                                      setOpenMenuId(null);
+                                      onRemoveTime();
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                                  >
+                                    <FiMinusCircle className="text-red-600" />
+                                    Remove Time
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
 
+                          </div>
                         </div>
                       </div>
+
+
+
                     </div>
 
+                    <div className="w-full mt-2">
 
+                      <UserAnalyticsSection
+                        userId={item.id}
+                        selectedDate={new Date(reportRange.startDate)}
+                        workTime={item.workTime}
+                        userName={item.name}
+                      />
+                    </div>
+
+                    {showTimeline && (
+                      <DailyActivityTimeline
+                        userId={item.id}
+                        reportRange={reportRange}
+                      />
+                    )}
 
                   </div>
-
-                  <div className="w-full mt-2">
-
-                    <UserAnalyticsSection
-                      userId={item.id}
-                      selectedDate={new Date(reportRange.startDate)}
-                      workTime={item.workTime}
-                      userName={item.name}
-                    />
-                  </div>
-
-                  {showTimeline && (
-                    <DailyActivityTimeline
-                      userId={item.id}
-                      reportRange={reportRange}
-                    />
-                  )}
-
                 </div>
-                </div>
-        )
+              )
             })
           )}
+        </div >
       </div >
-    </div >
 
-      {
-    profileUser && (
-      <UserProfileModal
-        open={true}
-        onClose={() => setProfileUserId(null)}
-        user={mapUserToProfileData(
-          profileUser,
-          data.find(
-            (item) =>
-              String(item.id) === String(profileUser._id)
-          )?.status
-        )}
-      />
-    )
-  }
+      {profileUser && (
+        <UserProfileModal
+          open={true}
+          onClose={() => setProfileUserId(null)}
+          user={mapUserToProfileData(
+            profileUser,
+            data.find(
+              (item) =>
+                String(item.id) === String(profileUser._id)
+            )?.status
+          )}
+        />
+      )}
     </div >
   );
 }
