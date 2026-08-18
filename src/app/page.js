@@ -95,7 +95,14 @@ export default function HomePage() {
             </a>
           </nav>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/authenticate/login"
+              className="px-4 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-900 text-sm font-semibold transition"
+            >
+              Sign in
+            </Link>
+
             <Link
               href="/authenticate/signup"
               className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition shadow-md shadow-indigo-600/20"
